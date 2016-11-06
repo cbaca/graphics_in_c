@@ -9,8 +9,14 @@
  *  only one asterisk means its a personal comment for my own understanding
  *  and I plan to remove it later
  *
- *  if you're looking at this source code, yes I'm aware I have no clue what,
- *  I'm doing, thank you
+ *  if you're looking at this source code and you are an effin pro, yes I'm
+ *  that aware I have no clue what I'm doing. Please let me know how to
+ *  improve.
+ *
+ *  main workspace:
+ *  4.7.2-1-ARCH x86_64 GNU/Linux
+ *  Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
+ *  VIM - Vi IMproved 8.0
  */
 
 #include <stdlib.h>
@@ -33,10 +39,27 @@
 #define VSHADER_PATH "shaders/vshader.glsl"
 #define FSHADER_PATH "shaders/fshader.glsl"
 
+const GLchar *const *g_vshader_string = (const char *[]) {
+    "#version 330 core\n"
+    "layout (location = 0) in vec3 position;\n"
+    "void main()\n"
+    "{\n"
+    "gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
+    "}\0"
+};
+const GLchar *const *g_fshader_string = (const char *[]) {
+    "#version 330 core\n"
+    "out vec4 color;\n"
+    "void main()\n"
+    "{\n"
+    "color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "}\0"
+};
+
 /** callback 関数宣言（かんすうせんげん）prototype */
 void key_callback(GLFWwindow *, int, int, int, int);
 
-/** シェーダーの文字列をファイルから取り出す */
+/** シェーダープログラムの文字列をファイルから取り出す関数宣言 prototype */
 int get_shader_string(char *restrict, char *restrict);
 
 /** プログラム開始（かいし）*/
@@ -54,10 +77,6 @@ main(/* int argc, char **argv */)
     };
 
     /** 変数宣言（へんすうせんげん）*/
-    GLchar *vertex_shader_buffer = NULL;
-    GLchar *fragment_shader_buffer = NULL;
-    //GLchar const *vertex_shader_buffer[1];
-    //GLchar const *fragment_shader_buffer[1];
     GLchar info_log_buffer[LOG_BUFFER_SIZE];
     GLint gl_success;
     GLuint vertex_buffer_object
@@ -103,14 +122,12 @@ main(/* int argc, char **argv */)
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     /** シェーダープログラム文字列ゲット！*/
-    vertex_shader_buffer = malloc(sizeof(GLchar) * SHADER_BUFFER_SIZE);
-    fragment_shader_buffer = malloc(sizeof(GLchar) * SHADER_BUFFER_SIZE);
-    if (!get_shader_string(vertex_shader_buffer, fragment_shader_buffer))
-        exit(EXIT_FAILURE);
+    /* はずだった・・・ */
 
     /**　頂点シェーダーをコンパイルしよう！*/
     v_shader_fd = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(v_shader_fd, 1, (const GLchar **)vertex_shader_buffer, NULL);
+    // glShaderSource(v_shader_fd, 1, (const GLchar **)vertex_shader_buffer, NULL);
+    glShaderSource(v_shader_fd, 1, g_vshader_string, NULL);
     glCompileShader(v_shader_fd);
 
     /** 頂点シェーダーコンパイラのエラーなかったように確認しましょう */
@@ -126,7 +143,9 @@ main(/* int argc, char **argv */)
 
     /** ピクセルシェーダーをコンパイルします */
     f_shader_fd = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(f_shader_fd, 1, (const GLchar  **)fragment_shader_buffer, NULL);
+    // glShaderSource(
+    // f_shader_fd, 1, (const GLchar **)fragment_shader_buffer, NULL);
+    glShaderSource(f_shader_fd, 1, g_fshader_string, NULL);
     glCompileShader(f_shader_fd);
 
     /** ピクセルシェーダーコンパイラのエラーなかったように確認しましょう */
@@ -207,8 +226,6 @@ main(/* int argc, char **argv */)
 
     glDeleteVertexArrays(1, &vertex_array_object);
     glDeleteBuffers(1, &vertex_buffer_object);
-    free(vertex_shader_buffer);
-    free(fragment_shader_buffer);
     // glDeleteShader(v_shader_fd);
     // glDeleteShader(f_shader_fd);
     glfwTerminate();
@@ -225,6 +242,8 @@ key_callback(
 ) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+
+    /* コンパイラうるさいんだからこれをいれといた */
     printf("scancode %d\n", scancode);
     printf("mode     %d\n", mode);
 }
@@ -234,13 +253,13 @@ get_shader_string(char *restrict vshader_buffer, char *restrict fshader_buffer)
 {
     FILE *vfd = NULL;
     FILE *ffd = NULL;
-    size_t i;
+    int i;
     int c;
 
     vfd = fopen(VSHADER_PATH, "r");
     if (!vfd) {
         fprintf(stderr, "Couldn't obtain vshader file at %s\n", VSHADER_PATH);
-        return EXIT_FAILURE;
+        return 0;
     }
     for (i = 0, c = 0; c != EOF; ++i) {
         c = fgetc(vfd);
