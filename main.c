@@ -1,10 +1,23 @@
 /** @file main.c
  *  @author cy baca
+ *  using tutorials from learnopengl.com
+ *  comments in japanese because it looks cool and I can
+ *
+ *  comment strings that start with two asteriscs describe the program
+ *  functionality and are meant to stay
+ *
+ *  only one asterisk means its a personal comment for my own understanding
+ *  and I plan to remove it later
+ *
+ *  if you're looking at this source code, yes I'm aware I have no clue what,
+ *  I'm doing, thank you
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+/** idky but apparently glew wants this */
 #ifndef GLEW_STATIC
 #define GLEW_STATIC
 #endif
@@ -17,14 +30,14 @@
 #define SHADER_BUFFER_SIZE 512
 #define VS_LOC 0
 
-#define VSHADER_PATH "/shaders/vshader.glsl";
-#define FSHADER_PATH "/shaders/fshader.glsl";
+#define VSHADER_PATH "shaders/vshader.glsl"
+#define FSHADER_PATH "shaders/fshader.glsl"
 
 /** callback 関数宣言（かんすうせんげん）prototype */
 void key_callback(GLFWwindow *, int, int, int, int);
 
 /** シェーダーの文字列をファイルから取り出す */
-int get_shader_string(char **vshader_buffer, char **fshader_buffer);
+int get_shader_string(char *restrict, char *restrict);
 
 /** プログラム開始（かいし）*/
 int
@@ -35,14 +48,16 @@ main(/* int argc, char **argv */)
      *  ベクトルとしてGPUに渡します
      */
     GLfloat vertices[] = {
-         -0.5f, -0.5f, 0.0f
-        , 0.5f, -0.5f, 0.0f
-        , 0.0f,  0.5f, 0.0f
+         -0.5f, -0.5f, 0.0f /** 左側ジャわ     */
+        , 0.5f, -0.5f, 0.0f /** 右側じゃってな */
+        , 0.0f,  0.5f, 0.0f /** 上っっす       */
     };
 
     /** 変数宣言（へんすうせんげん）*/
-    GLchar *vertex_shader_source = NULL;
-    GLchar *fragent_shader_source = NULL;
+    GLchar *vertex_shader_buffer = NULL;
+    GLchar *fragment_shader_buffer = NULL;
+    //GLchar const *vertex_shader_buffer[1];
+    //GLchar const *fragment_shader_buffer[1];
     GLchar info_log_buffer[LOG_BUFFER_SIZE];
     GLint gl_success;
     GLuint vertex_buffer_object
@@ -63,7 +78,7 @@ main(/* int argc, char **argv */)
     GLFWwindow *window = glfwCreateWindow(
           WINDOW_WIDTH
         , WINDOW_HEIGHT
-        , "LearnOpenGL"
+        , "WindMillIfImLucky"
         , NULL
         , NULL
     );
@@ -73,6 +88,9 @@ main(/* int argc, char **argv */)
         return EXIT_FAILURE;
     }
     glfwMakeContextCurrent(window);
+
+    /** キーのどれを押したか語存に出来るようなコールバック */
+    glfwSetKeyCallback(window, key_callback);
 
     /** glew初期化 */
     glewExperimental = GL_TRUE;
@@ -85,11 +103,15 @@ main(/* int argc, char **argv */)
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     /** シェーダープログラム文字列ゲット！*/
-    if (get_shader_string(&vertex_shader_source, &fragment_shader_source));
+    vertex_shader_buffer = malloc(sizeof(GLchar) * SHADER_BUFFER_SIZE);
+    fragment_shader_buffer = malloc(sizeof(GLchar) * SHADER_BUFFER_SIZE);
+    if (!get_shader_string(vertex_shader_buffer, fragment_shader_buffer))
+        exit(EXIT_FAILURE);
+
     /**　頂点シェーダーをコンパイルしよう！*/
     v_shader_fd = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(v_shader_fd, 1, &vertex_shader_source, NULL);
-    glComplieShader(v_shader_fd);
+    glShaderSource(v_shader_fd, 1, (const GLchar **)vertex_shader_buffer, NULL);
+    glCompileShader(v_shader_fd);
 
     /** 頂点シェーダーコンパイラのエラーなかったように確認しましょう */
     glGetShaderiv(v_shader_fd, GL_COMPILE_STATUS, &gl_success);
@@ -104,7 +126,7 @@ main(/* int argc, char **argv */)
 
     /** ピクセルシェーダーをコンパイルします */
     f_shader_fd = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(f_shader_fd, 1, &fragment_shader_source, NULL);
+    glShaderSource(f_shader_fd, 1, (const GLchar  **)fragment_shader_buffer, NULL);
     glCompileShader(f_shader_fd);
 
     /** ピクセルシェーダーコンパイラのエラーなかったように確認しましょう */
@@ -140,53 +162,55 @@ main(/* int argc, char **argv */)
         );
     }
 
+    /** こいつらはもういらないな */
+    glDeleteShader(v_shader_fd);
+    glDeleteShader(f_shader_fd);
+
     /** glバッファ初期化（しょきか）*/
+    glGenVertexArrays(1, &vertex_array_object);
     glGenBuffers(1, &vertex_buffer_object);
+    glBindVertexArray(vertex_array_object);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
     /* GL_STATIC_DRAW: 実行中ほぼバッファのデータは変わらないはず
      * GL_DYNAMIC_DRAW:　実行中データはいっぱい変わっちゃう可能性が高い
      * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
      */
-    glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, (sizeof vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(
           VS_LOC
         , 3
         , GL_FLOAT
         , GL_FALSE
-        , 3 * (sizeof GLfloat)
+        , 3 * sizeof (GLfloat)
         , NULL
     );
     glEnableVertexAttribArray(VS_LOC);
 
-    /*
-    glGenVertexArrays(1, &vertex_array_object);
-    glBindVertexArray(vertex_array_object);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
-    glBufferData(GL_ARRAY_BUFFER, sizeof vertices, vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof GLfloat, NULL);
-    glEnableVertexAttribArray(0);
+    /** エラー起きないようにバインドを外す */
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-    */
-
-    glUseProgram(shader_program);
 
     /** アニメループ */
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        /** rendering, etc instructions */
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        glUseProgram(shader_program);
+        glBindVertexArray(vertex_array_object);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
     }
 
-    glfwSetKeyCallback(window, key_callback);
-
-    free(vertex_shader_source);
-    free(fragent_shader_source);
-    glDeleteShader(v_shader_fd);
-    glDeleteShader(f_shader_fd);
+    glDeleteVertexArrays(1, &vertex_array_object);
+    glDeleteBuffers(1, &vertex_buffer_object);
+    free(vertex_shader_buffer);
+    free(fragment_shader_buffer);
+    // glDeleteShader(v_shader_fd);
+    // glDeleteShader(f_shader_fd);
     glfwTerminate();
     return EXIT_SUCCESS;
 }
@@ -195,8 +219,8 @@ void
 key_callback(
       GLFWwindow *window
     , int key
-    , int action
     , int scancode
+    , int action
     , int mode
 ) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -206,23 +230,23 @@ key_callback(
 }
 
 int
-get_shader_string(char **vshader_buffer, char **fshader_buffer)
+get_shader_string(char *restrict vshader_buffer, char *restrict fshader_buffer)
 {
     FILE *vfd = NULL;
     FILE *ffd = NULL;
-    char *line_buffer = NULL;
-    size_t line_length = 0;
+    size_t i;
+    int c;
 
-    *vshader_buffer = malloc(sizeof(char) * SHADER_BUFFER_SIZE);
-    *fshader_buffer = malloc(sizeof(char) * SHADER_BUFFER_SIZE);
-    
     vfd = fopen(VSHADER_PATH, "r");
     if (!vfd) {
         fprintf(stderr, "Couldn't obtain vshader file at %s\n", VSHADER_PATH);
         return EXIT_FAILURE;
     }
-    while((getline(&line_buffer, &line_length, vfd)) > 0)
-        strcat(*vshader_buffer, line_buffer);
+    for (i = 0, c = 0; c != EOF; ++i) {
+        c = fgetc(vfd);
+        vshader_buffer[i] = (char)c;
+    }
+    vshader_buffer[i - 1] = '\0';
     fclose(vfd);
 
     ffd = fopen(FSHADER_PATH, "r");
@@ -230,11 +254,13 @@ get_shader_string(char **vshader_buffer, char **fshader_buffer)
         fprintf(stderr, "Couldn't obtain fshader file at %s\n", FSHADER_PATH);
         return 0;
     }
-    while((getline(&line_buffer, &line_length, ffd)) > 0)
-        strcat(*fshader_buffer, line_buffer);
+    for (i = 0, c = 0; c != EOF; ++i) {
+        c = fgetc(ffd);
+        fshader_buffer[i] = (char)c;
+    }
+    fshader_buffer[i - 1] = '\0';
     fclose(ffd);
 
-    free(line_buffer);
     return 1;
 }
 /* w coord is used for PERSPECTIVE DIVISION */
