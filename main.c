@@ -56,6 +56,22 @@ const GLchar *const *g_fshader_string = (const char *[]) {
     "}\0"
 };
 
+/** 頂点（ちょうてん）配列（はいれつ）aka バッファ
+ *  頂点配列初期化
+ *  ベクトルとしてGPUに渡します
+ */
+GLfloat g_vertices[] = {
+       0.5f,  0.5f, 0.0f /** 上右っっす     */
+    ,  0.5f, -0.5f, 0.0f /** 下右じゃってな */
+    , -0.5f, -0.5f, 0.0f /** 下左ジャわ     */
+    , -0.5f,  0.5f, 0.0f /** 上左なーんじゃ */
+};
+
+GLuint g_indices[] = {
+      0, 1, 3 /** 三角さん第一目*/
+    , 1, 2, 3 /** 三角さん第二目*/
+};
+
 /** callback 関数宣言（かんすうせんげん）prototype */
 void key_callback(GLFWwindow *, int, int, int, int);
 
@@ -66,21 +82,12 @@ int get_shader_string(char *restrict, char *restrict);
 int
 main(/* int argc, char **argv */)
 {
-    /** 頂点（ちょうてん）配列（はいれつ）aka バッファ
-     *  頂点配列初期化
-     *  ベクトルとしてGPUに渡します
-     */
-    GLfloat vertices[] = {
-         -0.5f, -0.5f, 0.0f /** 左側ジャわ     */
-        , 0.5f, -0.5f, 0.0f /** 右側じゃってな */
-        , 0.0f,  0.5f, 0.0f /** 上っっす       */
-    };
-
     /** 変数宣言（へんすうせんげん）*/
     GLchar info_log_buffer[LOG_BUFFER_SIZE];
     GLint gl_success;
     GLuint vertex_buffer_object
          , vertex_array_object
+         , element_buffer_object
          , v_shader_fd
          , f_shader_fd
          , shader_program
@@ -188,13 +195,28 @@ main(/* int argc, char **argv */)
     /** glバッファ初期化（しょきか）*/
     glGenVertexArrays(1, &vertex_array_object);
     glGenBuffers(1, &vertex_buffer_object);
+    glGenBuffers(1, &element_buffer_object);
     glBindVertexArray(vertex_array_object);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
     /* GL_STATIC_DRAW: 実行中ほぼバッファのデータは変わらないはず
      * GL_DYNAMIC_DRAW:　実行中データはいっぱい変わっちゃう可能性が高い
      * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
      */
-    glBufferData(GL_ARRAY_BUFFER, (sizeof vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(
+          GL_ARRAY_BUFFER
+        , (sizeof g_vertices)
+        , g_vertices
+        , GL_STATIC_DRAW
+    );
+
+    /** エレメント配列バッファーも */
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer_object);
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER
+        , sizeof(g_indices)
+        , g_indices
+        , GL_STATIC_DRAW
+    );
     glVertexAttribPointer(
           VS_LOC
         , 3
@@ -205,7 +227,9 @@ main(/* int argc, char **argv */)
     );
     glEnableVertexAttribArray(VS_LOC);
 
-    /** エラー起きないようにバインドを外す */
+    /** エラー起きないようにバインドを外す。でも、どういうわけかエレメント配列
+     *  バッファーは外さないんだって。
+     */
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -218,16 +242,16 @@ main(/* int argc, char **argv */)
 
         glUseProgram(shader_program);
         glBindVertexArray(vertex_array_object);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
         glfwSwapBuffers(window);
     }
 
+    /* メモリリーク出ないように・・・な！*/
     glDeleteVertexArrays(1, &vertex_array_object);
     glDeleteBuffers(1, &vertex_buffer_object);
-    // glDeleteShader(v_shader_fd);
-    // glDeleteShader(f_shader_fd);
     glfwTerminate();
     return EXIT_SUCCESS;
 }
