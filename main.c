@@ -17,6 +17,8 @@
  *  4.7.2-1-ARCH x86_64 GNU/Linux
  *  Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
  *  VIM - Vi IMproved 8.0
+ *
+ *  今の様子：ただ四角を書くだけ
  */
 
 #include <stdlib.h>
@@ -67,9 +69,11 @@ GLfloat g_vertices[] = {
     , -0.5f,  0.5f, 0.0f /** 上左なーんじゃ */
 };
 
+/** ebo aka エレメント配列バッファー使用 */
 GLuint g_indices[] = {
-      0, 1, 3 /** 三角さん第一目*/
-    , 1, 2, 3 /** 三角さん第二目*/
+      0, 1, 3 /** 三角さん第一目   */
+    , 1, 2, 3 /** 三角さん第二目
+      あわせて一匹の四角さんとなる */
 };
 
 /** callback 関数宣言（かんすうせんげん）prototype */
