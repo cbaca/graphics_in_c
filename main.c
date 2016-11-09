@@ -19,6 +19,8 @@
  *  VIM - Vi IMproved 8.0
  *
  *  今の様子：ただ四角を書くだけ
+ *  色もテキスチャは使えてます
+ *  つぎはマトリクス関数を
  */
 
 #include <stdlib.h>
@@ -43,17 +45,24 @@
 #define COLOR_LOCATION 1
 #define TEXTURE_LOCATION 2
 
-#define TEXTURE_PATH "textures/awesomeface.png"
+#define TEXTURE_PATH "textures/ff.png"
 
-extern const char *const *VSHADER_STRING;
-extern const char *const *FSHADER_STRING;
-extern unsigned int INDEX_ARRAY3[6];
-extern float VERTICES4[32];
+extern const char *const *VSHADER_STRING; /** windmill.c */
+extern const char *const *FSHADER_STRING; /** windmill.c */
+extern unsigned int INDEX_ARRAY3[6];      /** windmill.c */
+extern float VERTICES4[32];               /** windmill.c */
 GLFWwindow *window = NULL;
 
 /** 関数プロトタイプ宣言
  */
 int wm_init();
+unsigned int shader_init();
+void init_shader_variables(
+      unsigned int *, unsigned int *, unsigned int *, unsigned int *);
+    unsigned int _init_vao();
+    unsigned int _init_vbo();
+    unsigned int _init_ebo();
+    unsigned int _init_texture();
 
 /** キーコールバック */
 void key_callback(GLFWwindow *, int, int, int, int);
@@ -63,7 +72,7 @@ void get_gpu_info();
 /** END 関数プロトタイプ宣言
 */
 
-/** プログラム開始（かいし）*/
+/** プログラム開始 */
 int
 main(int argc, char **argv)
 {
@@ -73,166 +82,22 @@ main(int argc, char **argv)
     }
 
     /** 変数宣言 */
-    GLchar info_log_buffer[LOG_BUFFER_SIZE]; /** 512 bytes */
-    GLint gl_success;
     GLuint vbo /** vertex buffer object  */
          , vao /** vertex array object   */
          , ebo /** element buffer object */
-         , v_shader_fd
-         , f_shader_fd
+         , texture_fd
          , shader_program
          ;
 
-    /** glfwなど初期化 */
+    /** GLやGLFWなど初期化 */
     if (!wm_init())
         return EXIT_FAILURE;
 
-    /**　頂点シェーダーをコンパイルしよう！*/
-    v_shader_fd = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(v_shader_fd, 1, VSHADER_STRING, NULL);
-    glCompileShader(v_shader_fd);
+    /** シェーダープログラムコンパイルコンパイルやリンキン */
+    shader_program = shader_init();
 
-    /** 頂点シェーダーコンパイラのエラーなかったように確認しましょう */
-    glGetShaderiv(v_shader_fd, GL_COMPILE_STATUS, &gl_success);
-    if (!gl_success) {
-        glGetShaderInfoLog(v_shader_fd, LOG_BUFFER_SIZE, NULL, info_log_buffer);
-        fprintf(stderr, "vshader compile error\n%s\n", info_log_buffer);
-    }
+    init_shader_variables(&vao, &vbo, &ebo, &texture_fd);
 
-    /** ピクセルシェーダーをコンパイルします */
-    f_shader_fd = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(f_shader_fd, 1, FSHADER_STRING, NULL);
-    glCompileShader(f_shader_fd);
-
-    /** ピクセルシェーダーコンパイラのエラーなかったように確認しましょう */
-    glGetShaderiv(f_shader_fd, GL_COMPILE_STATUS, &gl_success);
-    if (!gl_success) {
-        glGetShaderInfoLog(f_shader_fd, LOG_BUFFER_SIZE, NULL, info_log_buffer);
-        fprintf(stderr , "fshader compile error\n%s\n", info_log_buffer);
-    }
-
-    /** シェーダープログラム初期化&リンキン */
-    shader_program = glCreateProgram();
-    glAttachShader(shader_program, v_shader_fd);
-    glAttachShader(shader_program, f_shader_fd);
-    glLinkProgram(shader_program);
-
-    /** 出来たかしら？*/
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &gl_success);
-    if (!gl_success) {
-        glGetProgramInfoLog(shader_program, LOG_BUFFER_SIZE
-                                            , NULL, info_log_buffer);
-        fprintf(stderr, "shader program linking failed\n%s\n", info_log_buffer);
-    }
-
-    /** こいつらはもういらないな */
-    glDeleteShader(v_shader_fd);
-    glDeleteShader(f_shader_fd);
-
-    /** glバッファ初期化 */
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
-
-    glBindVertexArray(vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    /* GL_STATIC_DRAW: 実行中ほぼバッファのデータは変わらないはず
-     * GL_DYNAMIC_DRAW:　実行中データはいっぱい変わっちゃう可能性が高い
-     * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
-     */
-    glBufferData(
-          GL_ARRAY_BUFFER
-        , sizeof VERTICES4
-        , VERTICES4
-        , GL_STATIC_DRAW
-    );
-
-    /** エレメント配列バッファーも */
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER
-        , sizeof INDEX_ARRAY3
-        , INDEX_ARRAY3
-        , GL_STATIC_DRAW
-    );
-
-    const int array_stride = (int)(8 * sizeof(float));
-    const int position_size = 3;
-    const int color_size = 3;
-    const int texture_size = 2;
-    glVertexAttribPointer(
-          POSITION_LOCATION
-        , position_size
-        , GL_FLOAT
-        , GL_FALSE
-        , array_stride
-        , NULL
-    );
-    glEnableVertexAttribArray(POSITION_LOCATION);
-
-    glVertexAttribPointer(
-          COLOR_LOCATION
-        , color_size
-        , GL_FLOAT
-        , GL_FALSE
-        , array_stride
-        , (void *)(3 * sizeof(float))
-    );
-    glEnableVertexAttribArray(COLOR_LOCATION);
-
-    glVertexAttribPointer(
-          TEXTURE_LOCATION
-        , texture_size
-        , GL_FLOAT
-        , GL_FALSE
-        , array_stride
-        , (void *)(6 * sizeof(float))
-    );
-
-    /** テキスチャーをつけてみましょう */
-    unsigned int texture_fd;
-    glGenTextures(1, &texture_fd);
-    glBindTexture(GL_TEXTURE_2D, texture_fd);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    int w, h;
-    unsigned char *image_fd;
-    image_fd = SOIL_load_image(TEXTURE_PATH, &w, &h, 0, SOIL_LOAD_RGB);
-    glTexImage2D(
-          GL_TEXTURE_2D
-        , 0
-        , GL_RGB
-        , w
-        , h
-        , 0
-        , GL_RGB
-        , GL_UNSIGNED_BYTE
-        , image_fd
-    );
-    glGenerateMipmap(GL_TEXTURE_2D);
-    SOIL_free_image_data(image_fd);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    /** エラー起きないようにバインドを外す。でも、どういうわけかエレメント配列
-     *  バッファーは外さないんだって。
-     */
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-
-    struct _Colors {
-        float r, b, g, a; /** 16 byte */
-    };
-
-    struct _Colors colors = { .r = 0.5f, .b = 0.2f, .g = 0.0f, .a = 1.0f };
-    double tv;
-    float time_value;
-    double gv;
-    int vertex_color_location;
     /** アニメループ */
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -242,21 +107,8 @@ main(int argc, char **argv)
 
         glUseProgram(shader_program);
 
-        tv = glfwGetTime();
-        time_value = (float)tv;
-        gv = (sin(time_value) / 2) + 0.5;
-        colors.g = (float)gv;
-        vertex_color_location = glGetUniformLocation(shader_program, "u_color");
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_fd);
-
-        glUniform4f(
-              vertex_color_location
-            , colors.r
-            , colors.g
-            , colors.b
-            , colors.a
-        );
 
         glUniform1i(glGetUniformLocation(shader_program, "u_tex"), 0);
 
@@ -340,4 +192,191 @@ get_gpu_info()
     printf("\n\n\tmax attributes: %i\n\n", n);
 }
 
-/* w coord is used for PERSPECTIVE DIVISION */
+unsigned int
+shader_init()
+{
+    char info_log_buffer[LOG_BUFFER_SIZE];
+    int sc_success;
+    unsigned int v_shader_fd
+               , f_shader_fd
+               , shader_program
+               ;
+
+    /** 頂点シェーダーをコンパイルしよう！*/
+    v_shader_fd = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(v_shader_fd, 1, VSHADER_STRING, NULL);
+    glCompileShader(v_shader_fd);
+
+    /** 頂点しぇーだーコンパイラエラーなかったように確認しましょう */
+    glGetShaderiv(v_shader_fd, GL_COMPILE_STATUS, &sc_success);
+    if (!sc_success) {
+        glGetShaderInfoLog(v_shader_fd, LOG_BUFFER_SIZE, NULL, info_log_buffer);
+        fprintf(stderr, "vshader compile error \n%s\n", info_log_buffer);
+    }
+
+    /** ピクセルシェーダーコンパイルします */
+    f_shader_fd = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(f_shader_fd, 1, FSHADER_STRING, NULL);
+    glCompileShader(f_shader_fd);
+
+    /** ピクセルシェーダーコンパイラなかったように確認でしゅ */
+    glGetShaderiv(f_shader_fd, GL_COMPILE_STATUS, &sc_success);
+    if (!sc_success) {
+        glGetShaderInfoLog(f_shader_fd, LOG_BUFFER_SIZE, NULL, info_log_buffer);
+        fprintf(stderr, "fshader compile error\n%s\n", info_log_buffer);
+    }
+
+    /** シェーダープログラム初期化&リンキン */
+    shader_program = glCreateProgram();
+    glAttachShader(shader_program, v_shader_fd);
+    glAttachShader(shader_program, f_shader_fd);
+    glLinkProgram(shader_program);
+
+    /** 出来かしら */
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &sc_success);
+    if (!sc_success) {
+        glGetProgramInfoLog(
+            shader_program
+          , LOG_BUFFER_SIZE
+          , NULL
+          , info_log_buffer
+      );
+        fprintf(stderr, "shader program linking failed\n%s\n", info_log_buffer);
+    }
+
+    /** こういつらはもういらないな */
+    glDeleteShader(v_shader_fd);
+    glDeleteShader(f_shader_fd);
+
+    return shader_program;
+}
+
+/** gl頂点配列オブジェクト初期化 */
+unsigned int
+_init_vao()
+{
+    unsigned int vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    return vao;
+}
+
+/** gl頂点バッファーオブジェクト初期化 */
+unsigned int
+_init_vbo()
+{
+    unsigned int vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    /* GL_STATIC_DRAW: 実行中ほぼバッファのデータは変わらないはず
+     * GL_DYNAMIC_DRAW:　実行中データはいっぱい変わっちゃう可能性が高い
+     * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
+     */
+    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
+    return vbo;
+}
+
+/** glエレメントバッファーオブジェクト初期化 */
+unsigned int
+_init_ebo()
+{
+    unsigned int ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(
+          GL_ELEMENT_ARRAY_BUFFER
+        , sizeof INDEX_ARRAY3
+        , INDEX_ARRAY3
+        , GL_STATIC_DRAW
+    );
+    return ebo;
+}
+
+unsigned int
+_init_texture()
+{
+    unsigned char *image_fd = NULL;
+    int w, h;
+    unsigned int texture_fd;
+    glGenTextures(1, &texture_fd);
+    glBindTexture(GL_TEXTURE_2D, texture_fd);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    image_fd = SOIL_load_image(TEXTURE_PATH, &w, &h, 0, SOIL_LOAD_RGB);
+    fprintf(stderr, "SOIL_load image fuckin failing\n");
+    glTexImage2D(
+        GL_TEXTURE_2D
+        , 0
+        , GL_RGB
+        , w
+        , h
+        , 0
+        , GL_RGB
+        , GL_UNSIGNED_BYTE
+        , image_fd
+    );
+    glGenerateMipmap(GL_TEXTURE_2D);
+    SOIL_free_image_data(image_fd);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return texture_fd;
+}
+
+/**　glオブジェクト初期化 */
+void
+init_shader_variables(
+      unsigned int *vao
+    , unsigned int *vbo
+    , unsigned int *ebo
+    , unsigned int *tex
+    )
+{
+    *vao = _init_vao();
+    *vbo = _init_vbo();
+    *ebo = _init_ebo();
+
+    const int array_stride = (int)(8 * sizeof(float));
+    const int position_size = 3;
+    glVertexAttribPointer(
+        POSITION_LOCATION
+        , position_size
+        , GL_FLOAT
+        , GL_FALSE
+        , array_stride
+        , NULL
+    );
+    glEnableVertexAttribArray(POSITION_LOCATION);
+
+    const int color_size = 3;
+    glVertexAttribPointer(
+        COLOR_LOCATION
+        , color_size
+        , GL_FLOAT
+        , GL_FALSE
+        , array_stride
+        , (void *)(3 * sizeof(float))
+    );
+    glEnableVertexAttribArray(COLOR_LOCATION);
+
+    const int texture_size = 2;
+    glVertexAttribPointer(
+        TEXTURE_LOCATION
+        , texture_size
+        , GL_FLOAT
+        , GL_FALSE
+        , array_stride
+        , (void *)(6 * sizeof(float))
+    );
+    glEnableVertexAttribArray(TEXTURE_LOCATION);
+    *tex = _init_texture();
+
+   /** エラー起きないようにバインドを外す。でも、どういうわけかエレメント配列
+    *  バッファーだけは外さないんだって
+    */
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}

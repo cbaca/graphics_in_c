@@ -32,11 +32,11 @@ const char *const *FSHADER_STRING = (const char *[]) {
 
     "void main() "
     "{ "
-    "   color = texture(u_texture, v_tex) * v_color; "
+    "   color = mix(texture(u_texture, v_tex), v_color, 0.2); "
     "}\0"
 };
 
-/** 頂点（ちょうてん）配列（はいれつ）aka バッファ
+/** 頂点（ちょうてん）配列 aka バッファ
  *  頂点配列初期化
  *  ベクトルとしてGPUに渡します
  */
@@ -44,7 +44,7 @@ float VERTICES4[32] = {
    /** 場所                  色                  テキスチャ */
        0.5f,  0.5f, 0.0f,    1.0f, 0.0f, 0.0f,   1.0f, 1.0f /** 上右 */
     ,  0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f,   1.0f, 0.0f /** 下右 */
-    , -0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 1.0f,   0.0f, 0.0f /** 下左 */
+    , -0.5f, -0.5f, 0.0f,    0.0f, 0.0f, 1.0f,   0.0f, 0.0f /** 下左 */
     , -0.5f,  0.5f, 0.0f,    1.0f, 1.0f, 0.0f,   0.0f, 1.0f /** 上右 */
 };
 
