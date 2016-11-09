@@ -57,7 +57,7 @@ GLFWwindow *window = NULL;
  */
 int wm_init();
 unsigned int shader_init();
-void init_shader_variables(
+int init_shader_variables(
       unsigned int *, unsigned int *, unsigned int *, unsigned int *);
     unsigned int _init_vao();
     unsigned int _init_vbo();
@@ -65,7 +65,7 @@ void init_shader_variables(
     unsigned int _init_texture();
 
 /** キーコールバック */
-void key_callback(GLFWwindow *, int, int, int, int);
+void key_callback_(GLFWwindow *, int, int, int, int);
 
 /** gpu情報を標準出力に */
 void get_gpu_info();
@@ -82,11 +82,11 @@ main(int argc, char **argv)
     }
 
     /** 変数宣言 */
-    GLuint vbo /** vertex buffer object  */
-         , vao /** vertex array object   */
-         , ebo /** element buffer object */
-         , texture_fd
-         , shader_program
+    GLuint vbo = 0 /** vertex buffer object  */
+         , vao = 0/** vertex array object   */
+         , ebo = 0/** element buffer object */
+         , texture_fd = 0
+         , shader_program = 0
          ;
 
     /** GLやGLFWなど初期化 */
@@ -95,8 +95,11 @@ main(int argc, char **argv)
 
     /** シェーダープログラムコンパイルコンパイルやリンキン */
     shader_program = shader_init();
+    if (!shader_program)
+        exit(EXIT_FAILURE);
 
-    init_shader_variables(&vao, &vbo, &ebo, &texture_fd);
+    if (!init_shader_variables(&vao, &vbo, &ebo, &texture_fd))
+        exit(EXIT_FAILURE);
 
     /** アニメループ */
     while (!glfwWindowShouldClose(window)) {
@@ -151,7 +154,7 @@ wm_init()
     glfwMakeContextCurrent(window);
 
     /** キーのどれを押したか語存に出来るようなコールバック */
-    glfwSetKeyCallback(window, key_callback);
+    glfwSetKeyCallback(window, key_callback_);
 
     /** glew初期化 */
     glewExperimental = GL_TRUE;
@@ -169,27 +172,59 @@ wm_init()
 }
 
 void
-key_callback(
-      GLFWwindow *win
-    , int key
-    , int scancode
-    , int action
-    , int mode
-) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(win/* dow */, GL_TRUE);
-
-    /* コンパイラうるさいんじゃけこれをいれといた */
-    printf("scancode %d\n", scancode);
-    printf("mode     %d\n", mode);
-}
-
-void
 get_gpu_info()
 {
     int n;
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &n);
     printf("\n\n\tmax attributes: %i\n\n", n);
+}
+
+/**　glオブジェクト初期化 */
+int
+init_shader_variables(
+      unsigned int *vao
+    , unsigned int *vbo
+    , unsigned int *ebo
+    , unsigned int *tex
+    )
+{
+    *vao = _init_vao();
+    *vbo = _init_vbo();
+    *ebo = _init_ebo();
+
+    const int array_stride = (int)(8 * sizeof(float));
+    const int position_size = 3;
+    glVertexAttribPointer(
+          POSITION_LOCATION, position_size
+        , GL_FLOAT, GL_FALSE
+        , array_stride, NULL
+    );
+    glEnableVertexAttribArray(POSITION_LOCATION);
+
+    const int color_size = 3;
+    glVertexAttribPointer(
+          COLOR_LOCATION, color_size
+        , GL_FLOAT, GL_FALSE
+        , array_stride, (void *)(3 * sizeof(float))
+    );
+    glEnableVertexAttribArray(COLOR_LOCATION);
+
+    const int texture_size = 2;
+    glVertexAttribPointer(
+          TEXTURE_LOCATION, texture_size
+        , GL_FLOAT, GL_FALSE
+        , array_stride, (void *)(6 * sizeof(float))
+    );
+    glEnableVertexAttribArray(TEXTURE_LOCATION);
+    *tex = _init_texture();
+
+   /** エラー起きないようにバインドを外す。でも、どういうわけかエレメント配列
+    *  バッファーだけは外さないんだって
+    */
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return (int)(*vao && *vbo && *ebo && *tex);
 }
 
 unsigned int
@@ -273,7 +308,6 @@ _init_vbo()
      * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
      */
     glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
     return vbo;
 }
 
@@ -307,9 +341,8 @@ _init_texture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     image_fd = SOIL_load_image(TEXTURE_PATH, &w, &h, 0, SOIL_LOAD_RGB);
-    fprintf(stderr, "SOIL_load image fuckin failing\n");
     glTexImage2D(
-        GL_TEXTURE_2D
+          GL_TEXTURE_2D
         , 0
         , GL_RGB
         , w
@@ -326,57 +359,18 @@ _init_texture()
     return texture_fd;
 }
 
-/**　glオブジェクト初期化 */
 void
-init_shader_variables(
-      unsigned int *vao
-    , unsigned int *vbo
-    , unsigned int *ebo
-    , unsigned int *tex
-    )
-{
-    *vao = _init_vao();
-    *vbo = _init_vbo();
-    *ebo = _init_ebo();
+key_callback_(
+      GLFWwindow *win
+    , int key
+    , int scancode
+    , int action
+    , int mode
+) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(win/* dow */, GL_TRUE);
 
-    const int array_stride = (int)(8 * sizeof(float));
-    const int position_size = 3;
-    glVertexAttribPointer(
-        POSITION_LOCATION
-        , position_size
-        , GL_FLOAT
-        , GL_FALSE
-        , array_stride
-        , NULL
-    );
-    glEnableVertexAttribArray(POSITION_LOCATION);
-
-    const int color_size = 3;
-    glVertexAttribPointer(
-        COLOR_LOCATION
-        , color_size
-        , GL_FLOAT
-        , GL_FALSE
-        , array_stride
-        , (void *)(3 * sizeof(float))
-    );
-    glEnableVertexAttribArray(COLOR_LOCATION);
-
-    const int texture_size = 2;
-    glVertexAttribPointer(
-        TEXTURE_LOCATION
-        , texture_size
-        , GL_FLOAT
-        , GL_FALSE
-        , array_stride
-        , (void *)(6 * sizeof(float))
-    );
-    glEnableVertexAttribArray(TEXTURE_LOCATION);
-    *tex = _init_texture();
-
-   /** エラー起きないようにバインドを外す。でも、どういうわけかエレメント配列
-    *  バッファーだけは外さないんだって
-    */
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    /* コンパイラうるさいんじゃけこれをいれといた */
+    printf("scancode %d\n", scancode);
+    printf("mode     %d\n", mode);
 }
