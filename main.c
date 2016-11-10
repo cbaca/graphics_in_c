@@ -51,11 +51,13 @@ extern const char *const *VSHADER_STRING; /** windmill.c */
 extern const char *const *FSHADER_STRING; /** windmill.c */
 extern unsigned int INDEX_ARRAY3[6];      /** windmill.c */
 extern float VERTICES4[32];               /** windmill.c */
+extern void *glfw_init();
+extern void _key_callback(GLFWwindow *, int, int, int, int);
 GLFWwindow *window = NULL;
 
 /** 関数プロトタイプ宣言
  */
-int wm_init();
+int gl_glfw_init();
 unsigned int shader_init();
 int init_shader_variables(
       unsigned int *, unsigned int *, unsigned int *, unsigned int *);
@@ -65,7 +67,7 @@ int init_shader_variables(
     unsigned int _init_texture();
 
 /** キーコールバック */
-void key_callback_(GLFWwindow *, int, int, int, int);
+//void key_callback_(GLFWwindow *, int, int, int, int);
 
 /** gpu情報を標準出力に */
 void get_gpu_info();
@@ -90,7 +92,7 @@ main(int argc, char **argv)
          ;
 
     /** GLやGLFWなど初期化 */
-    if (!wm_init())
+    if (!gl_glfw_init())
         return EXIT_FAILURE;
 
     /** シェーダープログラムコンパイルコンパイルやリンキン */
@@ -131,16 +133,16 @@ main(int argc, char **argv)
 }
 
 int
-wm_init()
+gl_glfw_init()
 {
-    /** glfw初期化 */
+    /** glfw初期化
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
-    /** window初期化 */
+    */
+    /** window初期化
     window = glfwCreateWindow(
           WINDOW_WIDTH, WINDOW_HEIGHT
         , "Windmill hell yeah lets do this"
@@ -152,9 +154,10 @@ wm_init()
         return 0;
     }
     glfwMakeContextCurrent(window);
-
-    /** キーのどれを押したか語存に出来るようなコールバック */
+    */
+    /** キーのどれを押したか語存に出来るようなコールバック
     glfwSetKeyCallback(window, key_callback_);
+    */
 
     /** glew初期化 */
     glewExperimental = GL_TRUE;
@@ -359,18 +362,17 @@ _init_texture()
     return texture_fd;
 }
 
-void
-key_callback_(
-      GLFWwindow *win
-    , int key
-    , int scancode
-    , int action
-    , int mode
-) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(win/* dow */, GL_TRUE);
-
-    /* コンパイラうるさいんじゃけこれをいれといた */
-    printf("scancode %d\n", scancode);
-    printf("mode     %d\n", mode);
-}
+// void
+// key_callback_(
+//       GLFWwindow *win
+//     , int key
+//     , int scancode
+//     , int action
+//     , int mode
+// ) {
+//     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+//         glfwSetWindowShouldClose(win/* dow */, GL_TRUE);
+//     /* コンパイラうるさいんじゃけこれをいれといた */
+//     printf("scancode %d\n", scancode);
+//     printf("mode     %d\n", mode);
+// }
