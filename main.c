@@ -47,13 +47,17 @@
 
 #define TEXTURE_PATH "textures/ff.png"
 
+#include "toriaezu_matrix.h"
+/** import variables */
 extern const char *const *VSHADER_STRING; /** graphics.c */
 extern const char *const *FSHADER_STRING; /** graphics.c */
 extern unsigned int INDEX_ARRAY3[6];      /** graphics.c */
 extern float VERTICES4[32];               /** graphics.c */
+
+/** import functions */
 extern void *window_init(int, int);       /** window.c   */
 extern void debug_print_keys();           /** window.c   */
-//extern void _key_callback(GLFWwindow *, int, int, int, int); /** window.c */
+
 
 GLFWwindow *window = NULL;
 
@@ -73,10 +77,9 @@ void get_gpu_info();
 /** END 関数プロトタイプ宣言
 */
 
-/** プログラム開始 */
 int
 main(int argc, char **argv)
-/*  ところでwikipediaによってC言語の中では再帰的にmainを呼ぶことも可能だって */
+/** プログラム開始 */
 {
     if (argc > 1 && (strcmp(argv[1], "-i") == 0)) {
         get_gpu_info();
@@ -107,6 +110,15 @@ main(int argc, char **argv)
     if (!init_shader_variables(&vao, &vbo, &ebo, &texture_fd))
         exit(EXIT_FAILURE);
 
+    /** デバッグ */
+    float debug_matrix[MATRIX_SIZE] = { 0 };
+    matrix_set(debug_matrix, DEBUG);
+    debug_matrix_print(debug_matrix);
+    matrix_transpose(debug_matrix);
+    printf("\n\n");
+    debug_matrix_print(debug_matrix);
+    /** END デバッグ */
+
     /** アニメループ */
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -125,7 +137,9 @@ main(int argc, char **argv)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
+        /* デバッグ */
         debug_print_keys();
+        /* END デバック */
 
         glfwSwapBuffers(window);
     }

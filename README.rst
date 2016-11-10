@@ -10,6 +10,7 @@ Dependencies:
 
 Resources:
     learnopengl.com
+    "What Every Programmer Should Know About Memory" by Ulrich Drepper
 
 Home workspace:
     4.7.2-1-ARCH x86_64 GNU/Linux
@@ -20,8 +21,8 @@ Current state:
 
 Todo:
     -Make matrix maths for model matrix
-        -try x86intrin.h for vectorization
-    -Keyboard input handling
+    -try x86intrin.h for vectorization
+    -finish Keyboard input handling
 
 New things I learned:
     -C allows main() to be called recursively (not tested)
