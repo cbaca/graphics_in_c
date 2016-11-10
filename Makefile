@@ -9,15 +9,21 @@ LIBS = -lGL -lGLEW -lglfw -lm -lSOIL
 #-lX11 -lxcb -lXrandr -lXi \
 #-lpthread
 
-$(NAME):main.o windmill.o
+$(NAME):main.o graphics.o window.o
 	$(CC) -o $@ $^ $(LIBS)
 	@echo compilation successful af
 
 main.o:main.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-windmill.o:windmill.c
+graphics.o:graphics.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
+
+window.o:window.c
+	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
+
+#input.o:input.c
+#	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
 #asm.s:main.c
 #	$(CC) -S -fverbose-asm -o $@ $(FLAGS) $<

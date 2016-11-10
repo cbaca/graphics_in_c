@@ -47,17 +47,19 @@
 
 #define TEXTURE_PATH "textures/ff.png"
 
-extern const char *const *VSHADER_STRING; /** windmill.c */
-extern const char *const *FSHADER_STRING; /** windmill.c */
-extern unsigned int INDEX_ARRAY3[6];      /** windmill.c */
-extern float VERTICES4[32];               /** windmill.c */
-extern void *glfw_init();
-extern void _key_callback(GLFWwindow *, int, int, int, int);
+extern const char *const *VSHADER_STRING; /** graphics.c */
+extern const char *const *FSHADER_STRING; /** graphics.c */
+extern unsigned int INDEX_ARRAY3[6];      /** graphics.c */
+extern float VERTICES4[32];               /** graphics.c */
+extern void *window_init(int, int);       /** window.c   */
+extern void debug_print_keys();           /** window.c   */
+//extern void _key_callback(GLFWwindow *, int, int, int, int); /** window.c */
+
 GLFWwindow *window = NULL;
 
 /** 関数プロトタイプ宣言
  */
-int gl_glfw_init();
+int gl_glew_init();
 unsigned int shader_init();
 int init_shader_variables(
       unsigned int *, unsigned int *, unsigned int *, unsigned int *);
@@ -65,9 +67,6 @@ int init_shader_variables(
     unsigned int _init_vbo();
     unsigned int _init_ebo();
     unsigned int _init_texture();
-
-/** キーコールバック */
-//void key_callback_(GLFWwindow *, int, int, int, int);
 
 /** gpu情報を標準出力に */
 void get_gpu_info();
@@ -77,6 +76,7 @@ void get_gpu_info();
 /** プログラム開始 */
 int
 main(int argc, char **argv)
+/*  ところでwikipediaによってC言語の中では再帰的にmainを呼ぶことも可能だって */
 {
     if (argc > 1 && (strcmp(argv[1], "-i") == 0)) {
         get_gpu_info();
@@ -87,12 +87,16 @@ main(int argc, char **argv)
     GLuint vbo = 0 /** vertex buffer object  */
          , vao = 0/** vertex array object   */
          , ebo = 0/** element buffer object */
-         , texture_fd = 0
+         , texture_fd = 0 /** テキスチャー記述（きじゅつ）*/
          , shader_program = 0
          ;
 
+    window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
+    if (!window)
+        exit(EXIT_FAILURE);
+
     /** GLやGLFWなど初期化 */
-    if (!gl_glfw_init())
+    if (!gl_glew_init())
         return EXIT_FAILURE;
 
     /** シェーダープログラムコンパイルコンパイルやリンキン */
@@ -121,6 +125,8 @@ main(int argc, char **argv)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
+        debug_print_keys();
+
         glfwSwapBuffers(window);
     }
 
@@ -133,38 +139,14 @@ main(int argc, char **argv)
 }
 
 int
-gl_glfw_init()
+gl_glew_init()
 {
-    /** glfw初期化
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    */
-    /** window初期化
-    window = glfwCreateWindow(
-          WINDOW_WIDTH, WINDOW_HEIGHT
-        , "Windmill hell yeah lets do this"
-        , NULL, NULL
-    );
-    if (!window) {
-        fprintf(stderr, "Failed to create GLFW window\n");
-        glfwTerminate();
-        return 0;
-    }
-    glfwMakeContextCurrent(window);
-    */
-    /** キーのどれを押したか語存に出来るようなコールバック
-    glfwSetKeyCallback(window, key_callback_);
-    */
-
     /** glew初期化 */
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to initialize GLEW\n");
         glfwTerminate();
-        return EXIT_FAILURE;
+        return 0;
     }
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -345,15 +327,9 @@ _init_texture()
 
     image_fd = SOIL_load_image(TEXTURE_PATH, &w, &h, 0, SOIL_LOAD_RGB);
     glTexImage2D(
-          GL_TEXTURE_2D
-        , 0
-        , GL_RGB
-        , w
-        , h
-        , 0
-        , GL_RGB
-        , GL_UNSIGNED_BYTE
-        , image_fd
+          GL_TEXTURE_2D, 0, GL_RGB
+        , w, h, 0
+        , GL_RGB, GL_UNSIGNED_BYTE, image_fd
     );
     glGenerateMipmap(GL_TEXTURE_2D);
     SOIL_free_image_data(image_fd);
@@ -361,18 +337,3 @@ _init_texture()
 
     return texture_fd;
 }
-
-// void
-// key_callback_(
-//       GLFWwindow *win
-//     , int key
-//     , int scancode
-//     , int action
-//     , int mode
-// ) {
-//     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-//         glfwSetWindowShouldClose(win/* dow */, GL_TRUE);
-//     /* コンパイラうるさいんじゃけこれをいれといた */
-//     printf("scancode %d\n", scancode);
-//     printf("mode     %d\n", mode);
-// }
