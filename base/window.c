@@ -3,18 +3,39 @@
  *  コールバック関数、キーボード入力を格納（かくのう）など
  */
 
+#ifndef GLEW_STATIC
+#define GLEW_STATIC
+#endif
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <SOIL/SOIL.h>
 #include <stdio.h>
 #include "keys.h"
 
-/** プロトタイプやグローバル宣言 */
-static int _pressed_keys = 0; /** キーボード入力格納 */
+#define LOG_BUFFER_SIZE 512
+#define POSITION_LOCATION 0
+#define COLOR_LOCATION 1
+#define TEXTURE_LOCATION 2
+#define TEXTURE_PATH "textures/ff.png"
 
-void _key_callback(GLFWwindow *, int, int, int, int);
-int get_keys();
+/** 関数プロトタイプ宣言 */
+extern const char *const *VSHADER_STRING; /** graphics.c */
+extern const char *const *FSHADER_STRING; /** graphics.c */
+extern unsigned int INDEX_ARRAY3[6];      /** graphics.c */
+extern float VERTICES4[32];               /** graphics.c */
+extern void _key_callback(GLFWwindow *, int, int, int, int); /* input.c */
 
-/** もともとglfw_initだった
- *  @引数w ウィンドの横サイズのピクセル量
+int gl_glew_init(int, int);
+unsigned int shader_init();
+int init_shader_variables(
+  unsigned int *, unsigned int *, unsigned int *, unsigned int *);
+unsigned int _init_vao();
+unsigned int _init_vbo();
+unsigned int _init_ebo();
+unsigned int _init_texture();
+void get_gpu_info();
+
+/** @引数w ウィンドの横サイズのピクセル量
  *  @引数h ウィンドの縦サイズのピクセル量
  *  @戻り値（もどりち）初期化されているGLFWwindowのポインター変数
  */
@@ -50,104 +71,200 @@ window_init(int w, int h)
     return window;
 }
 
-void
-_key_callback(
-      GLFWwindow *win
-    , int key
-    , int scancode
-    , int action
-    , int mode
-)
+int
+gl_glew_init(int w, int h)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(win, GL_TRUE);
-
-    /** キーの機能がこうならなきゃならん：
-     *  Wキーは風車（かざぐるま）回転スイッチ切り替え
-     *  Yキーは風車自体をピッチ周り回転
-     *  左右向きキーがヴィーウをピッチに（Y回転軸ね。忘れっちゃダメだよ）
-     *  上下向きキーがプレーヤーを今向いてる目せんを前後通らせる
-     *      子供でも簡単に楽しく出来るように作りなさい
-     *
-     *  他はperspective projectionを絶対に実装（じっそう）しないと
-     *      1. viewing volume encompasses plane
-     *      2. start with orthographic projection while doing
-     *         modeling and viewing
-     *      3. enable HIDDEN SURFACE REMOVAL and CLEAR DEPTH BUFFER
-     */
-
-    if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_W:
-                _pressed_keys |= KEY_W;
-                break;
-            case GLFW_KEY_Y:
-                _pressed_keys |= KEY_Y;
-                break;
-            case GLFW_KEY_RIGHT:
-                _pressed_keys |= KEY_RIGHT;
-                break;
-            case GLFW_KEY_LEFT:
-                _pressed_keys |= KEY_LEFT;
-                break;
-            case GLFW_KEY_DOWN:
-                _pressed_keys |= KEY_DOWN;
-                break;
-            case GLFW_KEY_UP:
-                _pressed_keys |= KEY_UP;
-                break;
-            default:
-                break;
-        }
-    } else if (action == GLFW_RELEASE) {
-        switch (key) {
-            case GLFW_KEY_W:
-                _pressed_keys &= ~KEY_W;
-                break;
-            case GLFW_KEY_Y:
-                _pressed_keys &= ~KEY_Y;
-                break;
-            case GLFW_KEY_RIGHT:
-                _pressed_keys &= ~KEY_RIGHT;
-                break;
-            case GLFW_KEY_LEFT:
-                _pressed_keys &= ~KEY_LEFT;
-                break;
-            case GLFW_KEY_DOWN:
-                _pressed_keys &= ~KEY_DOWN;
-                break;
-            case GLFW_KEY_UP:
-                _pressed_keys &= ~KEY_UP;
-                break;
-            default:
-                break;
-        }
+    /** glew初期化 */
+    glewExperimental = GL_TRUE;
+    if (glewInit() != GLEW_OK) {
+        fprintf(stderr, "Failed to initialize GLEW\n");
+        glfwTerminate();
+        return 0;
     }
 
-    /* コンパイラ黙ってもらうためのとりあずいれとく */
-    printf("scancode %d\n", scancode);
-    printf("mode     %d\n", mode);
-}
+    glViewport(0, 0, w, h);
 
-int
-get_keys()
-{
-    return _pressed_keys;
+    return 1;
 }
 
 void
-debug_print_keys()
+get_gpu_info()
 {
-    if (_pressed_keys & KEY_W)
-        printf("ほら！回ってるすげぇ！!\n");
-    if (_pressed_keys & KEY_Y)
-        printf("あれ・・建物自体動いてんじゃない？\n");
-    if (_pressed_keys & KEY_RIGHT)
-        printf("RIGHT!\n");
-    if (_pressed_keys & KEY_LEFT)
-        printf("LEFT!\n");
-    if (_pressed_keys & KEY_DOWN)
-        printf("DOWN!\n");
-    if (_pressed_keys & KEY_UP)
-        printf("UP!\n");
+    int n;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &n);
+    printf("\n\n\tmax attributes: %i\n\n", n);
+}
+
+/**　glオブジェクト初期化 */
+int
+init_shader_variables(
+      unsigned int *vao
+    , unsigned int *vbo
+    , unsigned int *ebo
+    , unsigned int *tex
+    )
+{
+    *vao = _init_vao();
+    *vbo = _init_vbo();
+    *ebo = _init_ebo();
+
+    const int array_stride = (int)(8 * sizeof(float));
+    const int position_size = 3;
+    glVertexAttribPointer(
+          POSITION_LOCATION, position_size
+        , GL_FLOAT, GL_FALSE
+        , array_stride, NULL
+    );
+    glEnableVertexAttribArray(POSITION_LOCATION);
+
+    const int color_size = 3;
+    glVertexAttribPointer(
+          COLOR_LOCATION, color_size
+        , GL_FLOAT, GL_FALSE
+        , array_stride, (void *)(3 * sizeof(float))
+    );
+    glEnableVertexAttribArray(COLOR_LOCATION);
+
+    const int texture_size = 2;
+    glVertexAttribPointer(
+          TEXTURE_LOCATION, texture_size
+        , GL_FLOAT, GL_FALSE
+        , array_stride, (void *)(6 * sizeof(float))
+    );
+    glEnableVertexAttribArray(TEXTURE_LOCATION);
+    *tex = _init_texture();
+
+   /** エラー起きないようにバインドを外す。でも、どういうわけかエレメント配列
+    *  バッファーだけは外さないんだって
+    */
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    return (int)(*vao && *vbo && *ebo && *tex);
+}
+
+unsigned int
+shader_init()
+{
+    char info_log_buffer[LOG_BUFFER_SIZE];
+    int sc_success;
+    unsigned int v_shader_fd
+               , f_shader_fd
+               , shader_program
+               ;
+
+    /** 頂点シェーダーをコンパイルしよう！*/
+    v_shader_fd = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(v_shader_fd, 1, VSHADER_STRING, NULL);
+    glCompileShader(v_shader_fd);
+
+    /** 頂点しぇーだーコンパイラエラーなかったように確認しましょう */
+    glGetShaderiv(v_shader_fd, GL_COMPILE_STATUS, &sc_success);
+    if (!sc_success) {
+        glGetShaderInfoLog(v_shader_fd, LOG_BUFFER_SIZE, NULL, info_log_buffer);
+        fprintf(stderr, "vshader compile error \n%s\n", info_log_buffer);
+    }
+
+    /** ピクセルシェーダーコンパイルします */
+    f_shader_fd = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(f_shader_fd, 1, FSHADER_STRING, NULL);
+    glCompileShader(f_shader_fd);
+
+    /** ピクセルシェーダーコンパイラなかったように確認でしゅ */
+    glGetShaderiv(f_shader_fd, GL_COMPILE_STATUS, &sc_success);
+    if (!sc_success) {
+        glGetShaderInfoLog(f_shader_fd, LOG_BUFFER_SIZE, NULL, info_log_buffer);
+        fprintf(stderr, "fshader compile error\n%s\n", info_log_buffer);
+    }
+
+    /** シェーダープログラム初期化&リンキン */
+    shader_program = glCreateProgram();
+    glAttachShader(shader_program, v_shader_fd);
+    glAttachShader(shader_program, f_shader_fd);
+    glLinkProgram(shader_program);
+
+    /** 出来かしら */
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &sc_success);
+    if (!sc_success) {
+        glGetProgramInfoLog(
+            shader_program
+          , LOG_BUFFER_SIZE
+          , NULL
+          , info_log_buffer
+      );
+        fprintf(stderr, "shader program linking failed\n%s\n", info_log_buffer);
+    }
+
+    /** こういつらはもういらないな */
+    glDeleteShader(v_shader_fd);
+    glDeleteShader(f_shader_fd);
+
+    return shader_program;
+}
+
+/** gl頂点配列オブジェクト初期化 */
+unsigned int
+_init_vao()
+{
+    unsigned int vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    return vao;
+}
+
+/** gl頂点バッファーオブジェクト初期化 */
+unsigned int
+_init_vbo()
+{
+    unsigned int vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    /* GL_STATIC_DRAW: 実行中ほぼバッファのデータは変わらないはず
+     * GL_DYNAMIC_DRAW:　実行中データはいっぱい変わっちゃう可能性が高い
+     * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
+     */
+    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
+    return vbo;
+}
+
+/** glエレメントバッファーオブジェクト初期化 */
+unsigned int
+_init_ebo()
+{
+    unsigned int ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(
+          GL_ELEMENT_ARRAY_BUFFER
+        , sizeof INDEX_ARRAY3
+        , INDEX_ARRAY3
+        , GL_STATIC_DRAW
+    );
+    return ebo;
+}
+
+unsigned int
+_init_texture()
+{
+    unsigned char *image_fd = NULL;
+    int w, h;
+    unsigned int texture_fd;
+    glGenTextures(1, &texture_fd);
+    glBindTexture(GL_TEXTURE_2D, texture_fd);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    image_fd = SOIL_load_image(TEXTURE_PATH, &w, &h, 0, SOIL_LOAD_RGB);
+    glTexImage2D(
+          GL_TEXTURE_2D, 0, GL_RGB
+        , w, h, 0
+        , GL_RGB, GL_UNSIGNED_BYTE, image_fd
+    );
+    glGenerateMipmap(GL_TEXTURE_2D);
+    SOIL_free_image_data(image_fd);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return texture_fd;
 }

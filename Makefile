@@ -9,7 +9,7 @@ LIBS = -lGL -lGLEW -lglfw -lm -lSOIL
 #-lX11 -lxcb -lXrandr -lXi \
 #-lpthread
 
-$(NAME):main.o graphics.o window.o toriaezu_matrix.o
+$(NAME):main.o graphics.o window.o toriaezu_matrix.o input.o
 	$(CC) -o $@ $^ $(LIBS)
 	@echo compilation successful af
 
@@ -22,12 +22,16 @@ graphics.o:base/graphics.c
 window.o:base/window.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-toriaezu_matrix.o:calc/toriaezu_matrix.c
+input.o:base/input.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-#asm.s:main.c
-#	$(CC) -S -fverbose-asm -o $@ $(FLAGS) $<
+toriaezu_matrix.o:calc/toriaezu_matrix.c
+	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
 .PHONY: clean
 clean:
 	$(RM) $(NAME) *.o *.s
+
+#asm.s:main.c
+#	$(CC) -S -fverbose-asm -o $@ $(FLAGS) $<
+
