@@ -1,12 +1,12 @@
 ![windmill](windmill.png)
-Windmill3D
+#Windmill3D
 
-A program that will generate a 3D windmill
+##A program that will generate a 3D windmill
 
 *Dependencies*:
-    - [SOIL.h](https://www.archlinux.org/packages/community/i686/soil/) 
-    - [openGL/glew.h](https://www.archlinux.org/packages/extra/x86_64/glew/)
-    - [glfw3](https://www.archlinux.org/packages/community/x86_64/glfw-x11/)
+- [SOIL.h](https://www.archlinux.org/packages/community/i686/soil/) 
+- [openGL/glew.h](https://www.archlinux.org/packages/extra/x86_64/glew/)
+- [glfw3](https://www.archlinux.org/packages/community/x86_64/glfw-x11/)
 
 *Resources*:
 - learnopengl.com
