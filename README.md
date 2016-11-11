@@ -25,14 +25,11 @@ Current state
     - I can't figure out how to make this damn README display correctly
 
 Todo
-    - [ ] make a damn windmill
-    - [ ] generate first 3D cube
-    - [ ] Make matrix maths for model matrix
-        - [ ] inversion
-        - [ ] orthogonal projection
-        - [ ] perspective projection
-        - [ ] viewing matrix
-        - [ ] refactoring and optimization 
-        - [ ] more stuff i cant think of atm
-    - [ ] try x86intrin.h for vectorization and optimization in toriaezu libs
-    - [x] Keyboard input handling
+    - make a damn windmill
+    - generate first 3D cube
+    - math/inversion
+    - math/orthogonal projection
+    - math/perspective projection
+    - math/viewing matrix
+    - math/refactoring and optimization 
+    - math/try x86intrin.h for vectorization and optimization in toriaezu libs
