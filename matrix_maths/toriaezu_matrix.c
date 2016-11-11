@@ -1,5 +1,5 @@
 /** toriaezu_matrix.c
- *  行列数学を解くための関数をここで
+ *  行列数学式実現
  */
 
 /** 後で最適化（さいてきか）するために使おうと */
@@ -12,14 +12,14 @@
 // #include <x86intrin.h>
 
 /* todo:
- * translation
- * rotation
  * inversion
  * orthographic projection
  * perspective projection
- *
- * multiplication
  * viewing matrix
+ *
+ * refactor multiplication
+ * refactor translation
+ * refactor rotation
  */
 
 /* cosider pthread.h or omp.h later */
@@ -27,57 +27,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
-
-#define MATRIX_SIZE 16
-#define VECTOR_SIZE 4
-
-/* π は円周率（えんしゅうりつ）と言うらしいっす。ヒーリーシット*/
-#define TORI_PI 3.14159265358979323846264338327950288419716939937510582097494f
-
-/** externs */
-void tori_set(float *restrict, int);
-void tori_copy(float *restrict, /* const */ float *restrict);
-void tori_multiply(float *restrict, float *restrict);
-void tori_transpose(float *restrict);
-void tori_get_translate(float *restrict, float, float, float);
-void tori_get_rotate(float *restrict, double);
-
-void debug_tori_print(const float *);
-
-/** statics */
-enum _ToriStyle {
-      TORI_DEBUG
-    , TORI_IDENTITY
-    , TORI_ZERO
-    , TORI_STYLE_ERROR
-};
-
-static const float _DebugMatrix[MATRIX_SIZE] = {
-       0,  1,  2,  3
-    ,  4,  5,  6,  7
-    ,  8,  9, 10, 11
-    , 12, 13, 14, 15
-};
-
-static const float _IdentityMatrix[MATRIX_SIZE] = {
-      1, 0, 0, 0
-    , 0, 1, 0, 0
-    , 0, 0, 1, 0
-    , 0, 0, 0, 1
-};
-
-static const float _ZeroMatrix[MATRIX_SIZE] = {
-      0, 0, 0, 0
-    , 0, 0, 0, 0
-    , 0, 0, 0, 0
-    , 0, 0, 0, 0
-};
-
-struct _Vectors {
-    float *restrict a, *restrict b, *restrict c, *restrict d;
-};
-
-static struct _Vectors _vectorize(float *);
+#include "_toriaezu_matrix.h"
 
 /** implement statics */
 static struct _Vectors
@@ -148,11 +98,8 @@ tori_multiply(
     tori_copy(A, a);
     tori_copy(B, b);
     tori_transpose(B);
-    debug_tori_print(A);
-    debug_tori_print(B);
     tori_set(a, TORI_ZERO);
 
-    /* デバッグ */
     struct _Vectors vec_c = _vectorize(a);
     struct _Vectors vec_a = _vectorize(A);
     struct _Vectors vec_b = _vectorize(B);
@@ -209,12 +156,17 @@ tori_get_translate(float *restrict matrix, float x, float y, float z)
  *    sin(θ)  cos(θ) 0 0
  *      0       0    1 0
  *      0       0    0 1 }
- *  ガンバールロックを気を付けろと言うから後で調べよう
+ *
+ *  注意しろ, ジンバルロックを
+ *  ピッチした後に、ヨーは既に済んで、ヨーとロールは平気のはずだって
+ *  でまぁ、よく分からんがピッチが９０度なったらヨーもロールもなんか
+ *  いきなりへんなムードに入って動き始まるんだって
+ *  げきおこワッタファっだまじ
  */
 void
 tori_get_rotate(float *restrict new, double theta)
 {
-    /* とりあえずzから */
+    /* とりあえずZ回転軸（もしくはオイラーさんの「ヨー」）から現実に */
     double c = cos(theta);
     double s = sin(theta);
     tori_set(new, TORI_IDENTITY);
@@ -222,6 +174,9 @@ tori_get_rotate(float *restrict new, double theta)
     new[1] = (float)s;
     new[4] = (float)(-s);
     new[5] = (float)c;
+    /* X回転軸は「ロール」
+     * または、Yが「ピッチ」
+     */
 }
 
 void

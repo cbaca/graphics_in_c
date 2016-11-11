@@ -1,4 +1,6 @@
-/** toriaezu_matrix.c
+/** _toriaezu_matrix.h
+ *  toriaezu_matrix.c の中だけに使われる静的（せいてき）な隠蔽（いんぺい）な変数や
+ *  関数などでーーす
  *  行列数学を解くための関数をここで
  */
 
@@ -31,7 +33,6 @@
 #define MATRIX_SIZE 16
 #define VECTOR_SIZE 4
 
-/* π は円周率（えんしゅうりつ）と言うらしいっす。ヒーリーシット*/
 #define TORI_PI 3.14159265358979323846264338327950288419716939937510582097494f
 
 /** externs */

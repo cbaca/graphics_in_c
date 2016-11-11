@@ -18,9 +18,10 @@
  *  Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
  *  VIM - Vi IMproved 8.0
  *
- *  今の様子：ただ四角を書くだけ
- *  色もテキスチャは使えてます
- *  つぎはマトリクス関数を
+ *  今の様子：行列関数いちいち作られて、なんとかトランスフォームの
+ *  なんこかの式を使えてます
+ *
+ *  次: ３Dキューブを書いてみましょう
  */
 
 #include <stdlib.h>
@@ -47,7 +48,7 @@
 
 #define TEXTURE_PATH "textures/ff.png"
 
-#include "toriaezu_matrix.h"
+#include "includes/toriaezu_matrix.h"
 /** import variables */
 extern const char *const *VSHADER_STRING; /** graphics.c */
 extern const char *const *FSHADER_STRING; /** graphics.c */
@@ -88,11 +89,12 @@ main(int argc, char **argv)
 
     /** 変数宣言 */
     GLuint vbo = 0 /** vertex buffer object  */
-         , vao = 0/** vertex array object   */
-         , ebo = 0/** element buffer object */
+         , vao = 0 /** vertex array object   */
+         , ebo = 0 /** element buffer object */
          , texture_fd = 0 /** テキスチャー記述（きじゅつ）*/
          , shader_program = 0
          ;
+    int translate_fd = 0;
 
     window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!window)
@@ -110,17 +112,23 @@ main(int argc, char **argv)
     if (!init_shader_variables(&vao, &vbo, &ebo, &texture_fd))
         exit(EXIT_FAILURE);
 
-    /** デバッグ */
-    float debug_matrix[MATRIX_SIZE] = { 0 };
-    matrix_set(debug_matrix, DEBUG);
-    debug_matrix_print(debug_matrix);
-    matrix_transpose(debug_matrix);
-    printf("\n\n");
-    debug_matrix_print(debug_matrix);
-    /** END デバッグ */
 
-    /** アニメループ */
+    const float dt = TORI_PI / 24;
+    float dx = 0.1f;
+    float dy = 0.1f;
+    float kali_mm[MATRIX_SIZE] = { 0 };
+    float kali_tm[MATRIX_SIZE] = { 0 };
+    float kali_rm[MATRIX_SIZE] = { 0 };
+
+    tori_set(kali_mm, TORI_IDENTITY);
+    tori_get_translate(kali_tm, dx, dy, 0.0f);
+    tori_get_rotate(kali_rm, dt);
+
+    translate_fd = glGetUniformLocation(shader_program, "u_transform");
+
+    /** プログラム・ループ */
     while (!glfwWindowShouldClose(window)) {
+
         glfwPollEvents();
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -128,18 +136,22 @@ main(int argc, char **argv)
 
         glUseProgram(shader_program);
 
+        tori_get_translate(kali_tm, dx, dy, 0.0f);
+        tori_get_rotate(kali_rm,  glfwGetTime() * dt);
+        tori_multiply(kali_mm, kali_tm);
+        tori_multiply(kali_mm, kali_rm);
+        tori_get_translate(kali_tm, -dx, -dy, 0.0f);
+        tori_multiply(kali_mm, kali_tm);
+
+        glUniformMatrix4fv(translate_fd, 1, GL_TRUE, kali_mm);
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_fd);
-
-        glUniform1i(glGetUniformLocation(shader_program, "u_tex"), 0);
-
         glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
 
-        /* デバッグ */
-        debug_print_keys();
-        /* END デバック */
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
     }
@@ -165,8 +177,6 @@ gl_glew_init()
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    /** シェーダープログラム文字列ゲット！*/
-    /* はずだった・・・ */
     return 1;
 }
 
