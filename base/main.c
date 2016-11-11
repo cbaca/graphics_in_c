@@ -23,11 +23,11 @@
  *
  *  次: ３Dキューブを書いてみましょう
  *      coordinate systems（いちばん細かくから）
- *         ・ローカル
- *         ・からのワールドスペースを取り出せる
- *         ・ヴぃーウスペース（自分が立ってて目から除いでる観点）
- *         ・クリップスペース（画面に映すためにcoordを -1.0～1.0 に
- *         ・スクリーンスペース・ファックイェーア！
+ *         ・  ローカル・
+ *         ・  ワールド・スペースを取り出せる
+ *         ・    ビュー・スペース（自分が立ってて目から除いでる観点）
+ *         ・  クリップ・スペース（画面に映すためにcoordを -1.0～1.0 に
+ *         ・スクリーン・スペース・ファックイェーア！
  *              もしくはviewport transform
  *
  *  ・world coordinate system must be larger than canonical 2x2x2 view volume
@@ -37,6 +37,19 @@
  *  ・use two program objects
  *  ・place a WINDMILL in the scene
  *      ・parts need a different color on every side
+ *  座標をビューからクリップに変換するのに射影マトリクスを使うんだって
+ *  射影マトリクスは座標を例えば-1000から1000まであっても、それを-1~1レーンジに
+ *
+ *  NDC == Normalized Device Coordinates AKA -1.0 ~ 1.0
+ *  process to convert coordinates from a certain range to NDC is projection
+ *
+ *    
+ *  mat4 get_perspective(
+ *        field_of_view // size of viewspace
+ *      , aspect_ratio  // viewport_w / viewport_h
+ *      , near_plane
+ *      , far_plane
+ *  );
  */
 
 #include <string.h>
@@ -85,6 +98,10 @@ main(int argc, char **argv)
          ;
     int translate_fd = 0;
 
+    // float model_m[MATRIX_SIZE];
+    // float view_m[MATRIX_SIZE];
+    // float proj_m[MATRIX_SIZE];
+
     window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!window)
         exit(EXIT_FAILURE);
@@ -110,13 +127,14 @@ main(int argc, char **argv)
     float kali_mm[MATRIX_SIZE] = { 0 };
     float kali_tm[MATRIX_SIZE] = { 0 };
     float kali_rm[MATRIX_SIZE] = { 0 };
+    debug_tori_print(kali_rm);
     int input = 0;
 
     tori_set(kali_mm, TORI_IDENTITY);
     tori_get_translate(kali_tm, dx, dy, 0.0f);
     tori_get_rotate(kali_rm, dt);
 
-    translate_fd = glGetUniformLocation(shader_program, "u_transform");
+    translate_fd = glGetUniformLocation(shader_program, "u_model");
 
     /** プログラム・ループ */
     while (!glfwWindowShouldClose(window)) {

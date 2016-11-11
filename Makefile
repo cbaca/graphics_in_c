@@ -9,28 +9,31 @@ LIBS = -lGL -lGLEW -lglfw -lm -lSOIL
 #-lX11 -lxcb -lXrandr -lXi \
 #-lpthread
 
-$(NAME):main.o graphics.o window.o toriaezu_matrix.o input.o
-	$(CC) -o $@ $^ $(LIBS)
+$(NAME):src/main.o src/graphics.o src/window.o src/toriaezu_matrix.o src/toriaezu_debug.o src/input.o
+	$(CC) -o $@ $^ $(LIBS) -Lsrc
 	@echo compilation successful af
 
-main.o:base/main.c
+src/main.o:base/main.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-graphics.o:base/graphics.c
+src/graphics.o:base/graphics.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-window.o:base/window.c
+src/window.o:base/window.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-input.o:base/input.c
+src/input.o:base/input.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-toriaezu_matrix.o:calc/toriaezu_matrix.c
-	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
+src/toriaezu_matrix.o:toriaezu_matrix/toriaezu_matrix.c
+	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lsrc
+
+src/toriaezu_debug.o:toriaezu_matrix/toriaezu_debug.c
+	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lsrc
 
 .PHONY: clean
 clean:
-	$(RM) $(NAME) *.o *.s
+	$(RM) $(NAME) *.o *.s src/*.o
 
 #asm.s:main.c
 #	$(CC) -S -fverbose-asm -o $@ $(FLAGS) $<
