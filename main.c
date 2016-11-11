@@ -22,6 +22,13 @@
  *  なんこかの式を使えてます
  *
  *  次: ３Dキューブを書いてみましょう
+ *      coordinate systems（いちばん細かくから）
+ *         ・ローカル
+ *         ・からのワールドスペースを取り出せる
+ *         ・ヴぃーウスペース（自分が立ってて目から除いでる観点）
+ *         ・クリップスペース（画面に映すためにcoordを -1.0～1.0 に
+ *         ・スクリーンスペース・ファックイェーア！
+ *              もしくはviewport transform
  */
 
 #include <stdlib.h>
@@ -130,12 +137,14 @@ main(int argc, char **argv)
     while (!glfwWindowShouldClose(window)) {
 
         glfwPollEvents();
-
+        
+        /** bg カーラをリフレーシュー */
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shader_program);
 
+        /** 回ァーーーす　猫ナリ */
         tori_get_translate(kali_tm, dx, dy, 0.0f);
         tori_get_rotate(kali_rm,  glfwGetTime() * dt);
         tori_multiply(kali_mm, kali_tm);

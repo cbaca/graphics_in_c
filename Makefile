@@ -25,13 +25,9 @@ window.o:window.c
 toriaezu_matrix.o:matrix_maths/toriaezu_matrix.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-debug:main.o graphics.o window.o toriaezu_matrix.o
-	$(CC) -o aa_debug $^ $(DEFINE) $(LIBS)
-	@echo debug compile
-
 #asm.s:main.c
 #	$(CC) -S -fverbose-asm -o $@ $(FLAGS) $<
 
 .PHONY: clean
 clean:
-	$(RM) $(NAME) *.o *.s aa_debug
+	$(RM) $(NAME) *.o *.s
