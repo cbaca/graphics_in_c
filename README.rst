@@ -12,7 +12,7 @@ Resources:
     -learnopengl.com
     -"What Every Programmer Should Know About Memory" by Ulrich Drepper
     -`Gimbal locks`_.
-    .. _Wikipedia: https://en.wikipedia.org/wiki/Gimbal_lock
+    .. _Gimbal locks: https://en.wikipedia.org/wiki/Gimbal_lock
 
 Home workspace:
     -4.7.2-1-ARCH x86_64 GNU/Linux
