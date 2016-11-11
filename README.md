@@ -3,6 +3,7 @@ Windmill3D
 
 A program that will generate a 3D windmill
 
+<<<<<<< HEAD
 Dependencies
     - [SOIL.h](https://www.archlinux.org/packages/community/i686/soil/) 
     - [openGL/glew.h](https://www.archlinux.org/packages/extra/x86_64/glew/)
