@@ -18,9 +18,10 @@
  *  Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
  *  VIM - Vi IMproved 8.0
  *
- *  今の様子：ただ四角を書くだけ
- *  色もテキスチャは使えてます
- *  つぎはマトリクス関数を
+ *  今の様子：行列関数いちいち作られて、なんとかトランスフォームの
+ *  なんこかの式を使えてます
+ *
+ *  次: ３Dキューブを書いてみましょう
  */
 
 #include <stdlib.h>
@@ -47,15 +48,23 @@
 
 #define TEXTURE_PATH "textures/ff.png"
 
-extern const char *const *VSHADER_STRING; /** windmill.c */
-extern const char *const *FSHADER_STRING; /** windmill.c */
-extern unsigned int INDEX_ARRAY3[6];      /** windmill.c */
-extern float VERTICES4[32];               /** windmill.c */
+#include "includes/toriaezu_matrix.h"
+/** import variables */
+extern const char *const *VSHADER_STRING; /** graphics.c */
+extern const char *const *FSHADER_STRING; /** graphics.c */
+extern unsigned int INDEX_ARRAY3[6];      /** graphics.c */
+extern float VERTICES4[32];               /** graphics.c */
+
+/** import functions */
+extern void *window_init(int, int);       /** window.c   */
+extern void debug_print_keys();           /** window.c   */
+
+
 GLFWwindow *window = NULL;
 
 /** 関数プロトタイプ宣言
  */
-int wm_init();
+int gl_glew_init();
 unsigned int shader_init();
 int init_shader_variables(
       unsigned int *, unsigned int *, unsigned int *, unsigned int *);
@@ -64,17 +73,14 @@ int init_shader_variables(
     unsigned int _init_ebo();
     unsigned int _init_texture();
 
-/** キーコールバック */
-void key_callback_(GLFWwindow *, int, int, int, int);
-
 /** gpu情報を標準出力に */
 void get_gpu_info();
 /** END 関数プロトタイプ宣言
 */
 
-/** プログラム開始 */
 int
 main(int argc, char **argv)
+/** プログラム開始 */
 {
     if (argc > 1 && (strcmp(argv[1], "-i") == 0)) {
         get_gpu_info();
@@ -83,14 +89,19 @@ main(int argc, char **argv)
 
     /** 変数宣言 */
     GLuint vbo = 0 /** vertex buffer object  */
-         , vao = 0/** vertex array object   */
-         , ebo = 0/** element buffer object */
-         , texture_fd = 0
+         , vao = 0 /** vertex array object   */
+         , ebo = 0 /** element buffer object */
+         , texture_fd = 0 /** テキスチャー記述（きじゅつ）*/
          , shader_program = 0
          ;
+    int translate_fd = 0;
+
+    window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
+    if (!window)
+        exit(EXIT_FAILURE);
 
     /** GLやGLFWなど初期化 */
-    if (!wm_init())
+    if (!gl_glew_init())
         return EXIT_FAILURE;
 
     /** シェーダープログラムコンパイルコンパイルやリンキン */
@@ -101,8 +112,23 @@ main(int argc, char **argv)
     if (!init_shader_variables(&vao, &vbo, &ebo, &texture_fd))
         exit(EXIT_FAILURE);
 
-    /** アニメループ */
+
+    const float dt = TORI_PI / 24;
+    float dx = 0.1f;
+    float dy = 0.1f;
+    float kali_mm[MATRIX_SIZE] = { 0 };
+    float kali_tm[MATRIX_SIZE] = { 0 };
+    float kali_rm[MATRIX_SIZE] = { 0 };
+
+    tori_set(kali_mm, TORI_IDENTITY);
+    tori_get_translate(kali_tm, dx, dy, 0.0f);
+    tori_get_rotate(kali_rm, dt);
+
+    translate_fd = glGetUniformLocation(shader_program, "u_transform");
+
+    /** プログラム・ループ */
     while (!glfwWindowShouldClose(window)) {
+
         glfwPollEvents();
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -110,13 +136,21 @@ main(int argc, char **argv)
 
         glUseProgram(shader_program);
 
+        tori_get_translate(kali_tm, dx, dy, 0.0f);
+        tori_get_rotate(kali_rm,  glfwGetTime() * dt);
+        tori_multiply(kali_mm, kali_tm);
+        tori_multiply(kali_mm, kali_rm);
+        tori_get_translate(kali_tm, -dx, -dy, 0.0f);
+        tori_multiply(kali_mm, kali_tm);
+
+        glUniformMatrix4fv(translate_fd, 1, GL_TRUE, kali_mm);
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_fd);
-
-        glUniform1i(glGetUniformLocation(shader_program, "u_tex"), 0);
-
         glBindVertexArray(vao);
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
 
         glfwSwapBuffers(window);
@@ -131,43 +165,18 @@ main(int argc, char **argv)
 }
 
 int
-wm_init()
+gl_glew_init()
 {
-    /** glfw初期化 */
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
-    /** window初期化 */
-    window = glfwCreateWindow(
-          WINDOW_WIDTH, WINDOW_HEIGHT
-        , "Windmill hell yeah lets do this"
-        , NULL, NULL
-    );
-    if (!window) {
-        fprintf(stderr, "Failed to create GLFW window\n");
-        glfwTerminate();
-        return 0;
-    }
-    glfwMakeContextCurrent(window);
-
-    /** キーのどれを押したか語存に出来るようなコールバック */
-    glfwSetKeyCallback(window, key_callback_);
-
     /** glew初期化 */
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to initialize GLEW\n");
         glfwTerminate();
-        return EXIT_FAILURE;
+        return 0;
     }
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    /** シェーダープログラム文字列ゲット！*/
-    /* はずだった・・・ */
     return 1;
 }
 
@@ -342,35 +351,13 @@ _init_texture()
 
     image_fd = SOIL_load_image(TEXTURE_PATH, &w, &h, 0, SOIL_LOAD_RGB);
     glTexImage2D(
-          GL_TEXTURE_2D
-        , 0
-        , GL_RGB
-        , w
-        , h
-        , 0
-        , GL_RGB
-        , GL_UNSIGNED_BYTE
-        , image_fd
+          GL_TEXTURE_2D, 0, GL_RGB
+        , w, h, 0
+        , GL_RGB, GL_UNSIGNED_BYTE, image_fd
     );
     glGenerateMipmap(GL_TEXTURE_2D);
     SOIL_free_image_data(image_fd);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return texture_fd;
-}
-
-void
-key_callback_(
-      GLFWwindow *win
-    , int key
-    , int scancode
-    , int action
-    , int mode
-) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(win/* dow */, GL_TRUE);
-
-    /* コンパイラうるさいんじゃけこれをいれといた */
-    printf("scancode %d\n", scancode);
-    printf("mode     %d\n", mode);
 }
