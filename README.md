@@ -75,37 +75,58 @@
 ### Current direcotry tree courtesy of [tree](http://mama.indstate.edu/users/ice/tree/):
 ```
 .
-├── base
+├── base/
+│   ├── graphics.c
 │   ├── main.c      /* requires GL/glew.h and GLFW/glfw3.h */
-│   ├── input.c     /* requires GLFW/glfw3.h */
 │   ├── window.c    /* requires GL/glew.h GLFW/glfw3.h SOIL.h */
-│   └── graphics.c
+│   └── window.h
 │
-├── docs
+├── docs/
 │   └── windmill.png
 │
-├── includes
-│   ├── keys.h
-│   ├── graphics.h
+├── include/
 │   ├── input.h
-│   ├── toriaezu_matrix.h
-│   └── window.h
+│   └── mat4array.h
 │
 ├── Makefile
 ├── README.md
+├── obj/
 │
-├── textures
+├── textures/
 │   ├── awesomeface.png
 │   └── font.png
 │
-└── toriaezu_matrix
-    ├── data_type.c
-    ├── data_type.h
-    ├── debug.c
-    ├── enum.h
-    ├── macros.h
-    ├── mat_manip.c
-    ├── toriaezu_matrix.c
-    ├── toriaezu_matrix.h
-    └── _vec.h
+└── utils/
+    ├── geometry/
+    │   │
+    │   ├── header/
+    │   │   └── mat4array_defs.h
+    │   │
+    │   ├── include/
+    │   │   ├── mat4array_copy.h
+    │   │   ├── mat4array_make.h
+    │   │   ├── mat4array_multiply.h
+    │   │   ├── mat4array_print.h
+    │   │   ├── mat4array_rotate.h
+    │   │   ├── mat4array_translate.h
+    │   │   ├── mat4array_transpose.h
+    │   │   └── rowVecMat4.h
+    │   │
+    │   ├── mat4array_copy.c
+    │   ├── mat4array_make.c
+    │   ├── mat4array_multiply.c
+    │   ├── mat4array_print.c
+    │   ├── mat4array_rotate.c
+    │   ├── mat4array_translate.c
+    │   ├── mat4array_transpose.c
+    │   │
+    │   ├── rowVecMat4/
+    │   │   ├── make_rowVecMat4.c
+    │   │   └── rowVecMat4_t.h
+    │   │
+    │   ├── toriaezu_matrix.c
+    │   └── toriaezu_matrix.h
+    └── input/
+        ├── input.c           /* requires GLFW/glfw3.h */
+        └── key_macros.h
 ```
