@@ -13,13 +13,14 @@
 - [Awesome face image](http://learnopengl.com/img/textures/awesomeface.png)
 - [What Every Programmer Should Know About Memory.pdf](https://www.google.com/search?q=What+every+programmer+should+know+about+memory) by Ulrich Drepper
 
-### Resources I might use:
+### Resources I want to use, but haven't had a chance yet:
 - [Font image](http://webglfundamentals.org/webgl/resources/8x8-font.png)
 - [Euler Angles](https://en.wikipedia.org/wiki/Aircraft_principal_axes)
 - [Gimbal locks](https://en.wikipedia.org/wiki/Gimbal_lock)
 - [OpenGL Mathematics](https://github.com/g-truc/glm)
 - [Torque 3D Videogame Engine](https://github.com/GarageGames/Torque3D)
-- [Particles: a webgl demo application by google](view-source:https://www.khronos.org/registry/webgl/sdk/demos/google/particles/)
+- [Particles](https://www.khronos.org/registry/webgl/sdk/demos/google/particles/)
+  , a webgl demo application by google
 - [Graphics Programming Black Book by Michael Abrash](https://github.com/mcmihai/GPBB)
 
 ### Home workspace:
@@ -28,9 +29,8 @@
 
 ### Current state:
 - Successfully drawing a 2D rectangle with colors and texture from png
-- reading and storing keyboard input successfully
-- matrix math is chaos
-- I can't figure out how to make this damn README display correctly
+- reading, storing, and interacting with keyboard input successfully
+- matrix math is not breaking the program, I think
 
 ### Goals:
 - use a world coordinate system that is much wider than NVC.
@@ -47,8 +47,8 @@
     - *y key: toggle windmill spin about the yaw axis.*
     - *left/right: change direction of view about the yaw axis.*
     - *up/down: move the user forward/backward along the axis of view.*
-    - *use perspective projection.*
-- don't forget to enable hidden surface removal and clear the depth buffer.
+- use perspective projection.
+- note: don't forget to enable hidden surface removal and clear the depth buffer.
 
 ### Todo:
 - make a damn windmill
