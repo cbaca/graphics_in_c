@@ -2,7 +2,7 @@
 
 #include <GLFW/glfw3.h>
 #include <stdio.h>
-#include "keys.h"
+#include "../includes/keys.h"
 
 /** プロトタイプやグローバル宣言 */
 static int _pressed_keys = 0; /** キーボード入力格納 */

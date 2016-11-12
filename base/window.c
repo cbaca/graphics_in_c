@@ -3,12 +3,12 @@
  *  コールバック関数、キーボード入力を格納（かくのう）など
  */
 
-#include "_window.h"
+#include "../includes/window.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <SOIL/SOIL.h>
 #include <stdio.h>
-#include "keys.h"
+#include "../includes/keys.h"
 #include "../includes/graphics.h"
 
 /** 関数プロトタイプ宣言 */

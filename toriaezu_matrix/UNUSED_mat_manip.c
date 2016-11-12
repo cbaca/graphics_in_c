@@ -1,6 +1,5 @@
 /** toriaezu_manip.c */
 #include <assert.h>
-#include <_toriaezu_matrix.h>
 
 void
 tori_set(float *restrict matrix, int style)

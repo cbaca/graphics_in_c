@@ -53,12 +53,13 @@
 ### Todo:
 - make a damn windmill
 - generate first 3D cube
-- math/inversion
-- math/orthogonal projection
-- math/perspective projection
-- math/viewing matrix
-- math/refactoring and optimization
-- math/try x86intrin.h for vectorization and optimization in toriaezu libs
+- update toriaezu_matrix
+    - inversion
+    - orthogonal projection
+    - perspective projection
+    - viewing matrix
+    - refactoring and optimization
+    - try x86intrin.h for vectorization and optimization in toriaezu libs
 
 ### Next goal:3Dcube:
 - update toriaezu math library to deal with projection/view/clipping
@@ -73,23 +74,28 @@
 ```
 .
 ├── base
-│   ├── graphics.c
-│   ├── input.c
-│   ├── keys.h
-│   ├── main.c
-│   ├── window.c
-│   └── _window.h
+│   ├── main.c      /* requires GL/glew.h and GLFW/glfw3.h */
+│   ├── input.c     /* requires GLFW/glfw3.h */
+│   ├── window.c    /* requires GL/glew.h GLFW/glfw3.h SOIL.h */
+│   └── graphics.c
+│
 ├── docs
 │   └── windmill.png
+│
 ├── includes
+│   ├── keys.h
 │   ├── graphics.h
 │   ├── input.h
-│   └── toriaezu_matrix.h
+│   ├── toriaezu_matrix.h
+│   └── window.h
+│
 ├── Makefile
 ├── README.md
+│
 ├── textures
 │   ├── awesomeface.png
 │   └── font.png
+│
 └── toriaezu_matrix
     ├── data_type.c
     ├── data_type.h

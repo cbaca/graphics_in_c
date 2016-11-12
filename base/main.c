@@ -22,20 +22,6 @@
  *         ・スクリーン・スペース・ファックイェーア！
  *              もしくはviewport transform
  *
- *  ・world coordinate system must be larger than canonical 2x2x2 view volume
- *  ・use texture-mapped geometry
- *  ・use 5 buildings of different shapes around the scene
- *  ・at least one building must have different colors
- *  ・use two program objects
- *  ・place a WINDMILL in the scene
- *      ・parts need a different color on every side
- *  座標をビューからクリップに変換するのに射影マトリクスを使うんだって
- *  射影マトリクスは座標を例えば-1000から1000まであっても、それを-1~1レーンジに
- *
- *  NDC == Normalized Device Coordinates AKA -1.0 ~ 1.0
- *  process to convert coordinates from a certain range to NDC is projection
- *
- *
  *  mat4 get_perspective(
  *        field_of_view // size of viewspace
  *      , aspect_ratio  // viewport_w / viewport_h
@@ -71,7 +57,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "keys.h"
+#include "../includes/keys.h"
 
 #ifndef GLEW_STATIC
 #define GLEW_STATIC
@@ -84,14 +70,14 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-/** 関数プロトタイプ宣言 */
-extern void *window_init(int, int);  /** window.c */
-extern void debug_print_keys();      /** window.c */
-extern int gl_glew_init(int, int);   /** window.c */
-extern unsigned int shader_init();   /** window.c */
+/** window.cで現実にされている関数プロトタイプ宣言 */
+extern void *window_init(int, int);
+extern void debug_print_keys();
+extern int gl_glew_init(int, int);
+extern unsigned int shader_init();
 extern int init_shader_variables(
   unsigned int *, unsigned int *, unsigned int *, unsigned int *);
-extern void get_gpu_info();          /** window.c */
+extern void get_gpu_info();
 
 int
 main(int argc, char **argv)
@@ -138,8 +124,7 @@ main(int argc, char **argv)
     if (!init_shader_variables(&vao, &vbo, &ebo, &texture_fd))
         exit(EXIT_FAILURE);
 
-
-/** こっからは必要なくなるものが多い */
+/*** こっからは必要なくなるものが多い */
     float reality_check = 0;
     float dt = 0;
     float dx = 0.1f;
@@ -211,7 +196,7 @@ main(int argc, char **argv)
 
         glfwSwapBuffers(window);
     }
-/** 多分ここらへんまで */
+/* 多分ここらへんまで ***/
 
     /* メモリリーク出ないように・・・な！*/
     glDeleteVertexArrays(1, &vao);
