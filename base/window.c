@@ -3,37 +3,16 @@
  *  コールバック関数、キーボード入力を格納（かくのう）など
  */
 
-#ifndef GLEW_STATIC
-#define GLEW_STATIC
-#endif
+#include "_window.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <SOIL/SOIL.h>
 #include <stdio.h>
 #include "keys.h"
-
-#define LOG_BUFFER_SIZE 512
-#define POSITION_LOCATION 0
-#define COLOR_LOCATION 1
-#define TEXTURE_LOCATION 2
-#define TEXTURE_PATH "textures/ff.png"
+#include "../includes/graphics.h"
 
 /** 関数プロトタイプ宣言 */
-extern const char *const *VSHADER_STRING; /** graphics.c */
-extern const char *const *FSHADER_STRING; /** graphics.c */
-extern unsigned int INDEX_ARRAY3[6];      /** graphics.c */
-extern float VERTICES4[32];               /** graphics.c */
 extern void _key_callback(GLFWwindow *, int, int, int, int); /* input.c */
-
-int gl_glew_init(int, int);
-unsigned int shader_init();
-int init_shader_variables(
-  unsigned int *, unsigned int *, unsigned int *, unsigned int *);
-unsigned int _init_vao();
-unsigned int _init_vbo();
-unsigned int _init_ebo();
-unsigned int _init_texture();
-void get_gpu_info();
 
 /** @引数w ウィンドの横サイズのピクセル量
  *  @引数h ウィンドの縦サイズのピクセル量
@@ -111,27 +90,27 @@ init_shader_variables(
     const int array_stride = (int)(8 * sizeof(float));
     const int position_size = 3;
     glVertexAttribPointer(
-          POSITION_LOCATION, position_size
+          VS_POSITION_LOC, position_size
         , GL_FLOAT, GL_FALSE
         , array_stride, NULL
     );
-    glEnableVertexAttribArray(POSITION_LOCATION);
+    glEnableVertexAttribArray(VS_POSITION_LOC);
 
     const int color_size = 3;
     glVertexAttribPointer(
-          COLOR_LOCATION, color_size
+          VS_COLOR_LOC, color_size
         , GL_FLOAT, GL_FALSE
         , array_stride, (void *)(3 * sizeof(float))
     );
-    glEnableVertexAttribArray(COLOR_LOCATION);
+    glEnableVertexAttribArray(VS_COLOR_LOC);
 
     const int texture_size = 2;
     glVertexAttribPointer(
-          TEXTURE_LOCATION, texture_size
+          VS_TEXTURE_LOC, texture_size
         , GL_FLOAT, GL_FALSE
         , array_stride, (void *)(6 * sizeof(float))
     );
-    glEnableVertexAttribArray(TEXTURE_LOCATION);
+    glEnableVertexAttribArray(VS_TEXTURE_LOC);
     *tex = _init_texture();
 
    /** エラー起きないようにバインドを外す。でも、どういうわけかエレメント配列

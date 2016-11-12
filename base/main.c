@@ -13,14 +13,6 @@
  *  that aware I have no clue what I'm doing. Please let me know how to
  *  improve.
  *
- *  main workspace:
- *  4.7.2-1-ARCH x86_64 GNU/Linux
- *  Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
- *  VIM - Vi IMproved 8.0
- *
- *  今の様子：行列関数いちいち作られて、なんとかトランスフォームの
- *  なんこかの式を使えてます
- *
  *  次: ３Dキューブを書いてみましょう
  *      coordinate systems（いちばん細かくから）
  *         ・  ローカル・
@@ -43,13 +35,16 @@
  *  NDC == Normalized Device Coordinates AKA -1.0 ~ 1.0
  *  process to convert coordinates from a certain range to NDC is projection
  *
- *    
+ *
  *  mat4 get_perspective(
  *        field_of_view // size of viewspace
  *      , aspect_ratio  // viewport_w / viewport_h
  *      , near_plane
  *      , far_plane
  *  );
+ *
+ *  ようするにVclip = Mprojection ・Mview ・Mmodel ・Vlocal
+ *  現実にやるときはこの連続の逆パタンだって
  */
 
 #include <string.h>
@@ -96,11 +91,19 @@ main(int argc, char **argv)
          , texture_fd = 0 /** テキスチャー記述（きじゅつ）*/
          , shader_program = 0
          ;
-    int translate_fd = 0;
+
+    /** 頂点シェーダーと連絡するためのファイル記述子 */
+    // int model_fd = 0 /** "u_model"      */
+    //   , view_fd = 0  /** "u_view"       */
+    //   , pers_fd = 0  /** "u_perspective */
+    //   ;
 
     // float model_m[MATRIX_SIZE];
     // float view_m[MATRIX_SIZE];
     // float proj_m[MATRIX_SIZE];
+
+    /** とりあえーーーーずだけ */
+    int translate_fd = 0;
 
     window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!window)
@@ -121,13 +124,12 @@ main(int argc, char **argv)
 
 /** こっからは必要なくなる */
     float reality_check = 0;
-    float dt = 0;//TORI_PI / 24;
+    float dt = 0;
     float dx = 0.1f;
     float dy = 0.1f;
     float kali_mm[MATRIX_SIZE] = { 0 };
     float kali_tm[MATRIX_SIZE] = { 0 };
     float kali_rm[MATRIX_SIZE] = { 0 };
-    debug_tori_print(kali_rm);
     int input = 0;
 
     tori_set(kali_mm, TORI_IDENTITY);
