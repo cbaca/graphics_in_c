@@ -14,18 +14,20 @@
 - [What Every Programmer Should Know About Memory.pdf](https://www.google.com/search?q=What+every+programmer+should+know+about+memory) by Ulrich Drepper
 
 ### Resources I want to use, but haven't had a chance yet:
+- [Particles](https://www.khronos.org/registry/webgl/sdk/demos/google/particles/)
 - [Font image](http://webglfundamentals.org/webgl/resources/8x8-font.png)
 - [Euler Angles](https://en.wikipedia.org/wiki/Aircraft_principal_axes)
 - [Gimbal locks](https://en.wikipedia.org/wiki/Gimbal_lock)
 - [OpenGL Mathematics](https://github.com/g-truc/glm)
+- [Perspective projection](https://en.wikipedia.org/wiki/3D_projection#Perspective_projection)
 - [Torque 3D Videogame Engine](https://github.com/GarageGames/Torque3D)
-- [Particles](https://www.khronos.org/registry/webgl/sdk/demos/google/particles/)
   , a webgl demo application by google
 - [Graphics Programming Black Book by Michael Abrash](https://github.com/mcmihai/GPBB)
 
 ### Home workspace:
-- 4.7.2-1-ARCH x86_64 GNU/Linux
-- Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
+- OS: 4.7.2-1-ARCH x86_64 GNU/Linux
+- CPU: Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
+- GPU: AMD Redwood LE Radeon HD 5550/5570/5630/6390/6490/7570
 
 ### Current state:
 - Successfully drawing a 2D rectangle with colors and texture from png

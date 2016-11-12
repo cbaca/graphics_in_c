@@ -3,13 +3,15 @@
  *  コールバック関数、キーボード入力を格納（かくのう）など
  */
 
-#include "../includes/window.h"
+#ifndef GLEW_STATIC
+#define GLEW_STATIC
+#endif
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <SOIL/SOIL.h>
 #include <stdio.h>
-#include "../includes/keys.h"
-#include "../includes/graphics.h"
+#include "../include/input.h"
+#include "window.h"
 
 /** 関数プロトタイプ宣言 */
 extern void _key_callback(GLFWwindow *, int, int, int, int); /* input.c */

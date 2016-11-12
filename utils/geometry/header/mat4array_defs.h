@@ -1,0 +1,15 @@
+/** mat4array_defs.h */
+#ifndef MAT4ARRAY_DEFS_H_
+#define MAT4ARRAY_DEFS_H_
+#define MAT4ARRAY_LEN 16
+#define MAT4VEC_LEN 4
+enum {
+      MAT4ARRAY_DEBUG
+    , MAT4ARRAY_MODEL
+    , MAT4ARRAY_VIEW
+    , MAT4ARRAY_CLIP
+    , MAT4ARRAY_IDENTITY
+    , MAT4ARRAY_ZERO
+    , MAT4ARRAY_ERROR
+};
+#endif

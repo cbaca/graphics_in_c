@@ -1,17 +1,9 @@
 /** @file main.c
  *  @author cy baca
- *  using tutorials from learnopengl.com
  *  comments in japanese because it looks cool and I can so gomd
  *
- *  comment strings that start with two asteriscs describe the program
- *  functionality and are meant to stay
- *
- *  only one asterisk means its a personal comment for my own understanding
- *  and I plan to remove it later
- *
- *  if you're looking at this source code and you are an effin pro, yes I'm
- *  that aware I have no clue what I'm doing. Please let me know how to
- *  improve.
+ *  **double asterisk comments are descriptive of the program and meant to stay
+ *  *single asterisk comments should be temporary
  *
  *  次: ３Dキューブを書いてみましょう
  *      coordinate systems（いちばん細かくから）
@@ -22,7 +14,7 @@
  *         ・スクリーン・スペース・ファックイェーア！
  *              もしくはviewport transform
  *
- *  mat4 get_perspective(
+ *  float get_perspective(
  *        field_of_view // size of viewspace
  *      , aspect_ratio  // viewport_w / viewport_h
  *      , near_plane
@@ -30,42 +22,25 @@
  *  );
  *
  *  ようするにVclip = Mprojection ・Mview ・Mmodel ・Vlocal
- *  現実にやるときはこの連続の逆パタンだって
+ *  現実にやるときはこの連続の逆だそうです
  *
- *  ヨー、ピッチ、ロールに含まれっテイル「オイラー角」の理解しやすい考えかたです
- *  ・ロールと言えば、飛び中飛行機は曲がるときに右側の羽か左側の羽どっちかが下へ
- *    、もうどっちかが上へ。ときに、飛行機の体が周り回転するじゃないですか。って
- *    ことなら、飛行機自体がX軸みたいじゃーーん。そして「回転」って英語で言おう
- *    と思えば、「ロール」って言わないっけ？だよな！ほら、飛行機 ＝ ロール ＝ X軸
- *  ・ピッチがY回転軸やったな。思いたかったと違ってYは縦じゃなくて、
- *    飛行機の羽の先がつなげられる線のほうだったらしい。と覚えとけば、後は飛行機が
- *    上か下に迎えるときにのその羽の間の線を考えればいいから。直感的にわかりやすいかも
- *    まぁ、とりあえずピッチがY回転軸です。そして、Y回転軸がX回転軸じゃないはの横に
- *    なってるやつです。
- *  ・ヨーがZです。なぜならXとYはもうとられている。そんだけです。直感的にわかりやすい
- *    飛考え方は、行機は飛んでる間にゴジラとか狂人とかに攻撃された場合だけしかに直接
- *    曲がらない回転軸。それ縦のやつだったな。わかりやすべ？
- *  要約に、
- *  ・ロールが横のX。からの
- *  ・ビッチがもう一つの横のY。
- *  ・ヨーが縦のZ。お終了です。
- *  ・理由は意味不明。おやすみなさい。
- *  やっぱ説明としてくそやけこれも見といてください：
- *    https://en.wikipedia.org/wiki/Aircraft_principal_axes
+ *  ヨー、ピッチ、ロールに含まれっテイル「オイラー角」に付いて
+ *  ・ロール:横のX
+ *  ・ビッチ:横のY
+ *  ・ヨー  :縦のZ
  */
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "../includes/keys.h"
 
 #ifndef GLEW_STATIC
 #define GLEW_STATIC
 #endif
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include "../includes/toriaezu_matrix.h"
-#include "../includes/input.h"
+#include "../include/input.h"
+#include "../include/mat4array.h"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -104,9 +79,9 @@ main(int argc, char **argv)
     //   ;
 
     /** 4x4単精度浮動小数点数行列: VSに渡します */
-    // mat4 model_m[MAT_SIZE];
-    // mat4 view_m[MAT_SIZE];
-    // mat4 proj_m[MAT_SIZE];
+    // float model_m[MAT4ARRAY_LEN];
+    // float view_m[MAT4ARRAY_LEN];
+    // float proj_m[MAT4ARRAY_LEN];
 
     window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!window)
@@ -129,14 +104,14 @@ main(int argc, char **argv)
     float dt = 0;
     float dx = 0.1f;
     float dy = 0.1f;
-    mat4 kali_mm[MAT_SIZE] = { 0 };
-    mat4 kali_tm[MAT_SIZE] = { 0 };
-    mat4 kali_rm[MAT_SIZE] = { 0 };
+    float kali_mm[MAT4ARRAY_LEN] = { 0 };
+    float kali_tm[MAT4ARRAY_LEN] = { 0 };
+    float kali_rm[MAT4ARRAY_LEN] = { 0 };
     int input = 0;
 
-    tori_set(kali_mm, TORI_IDENTITY);
-    tori_get_translate(kali_tm, dx, dy, 0.0f);
-    tori_get_rotate(kali_rm, dt);
+    mat4array_make(kali_mm, MAT4ARRAY_IDENTITY);
+    mat4array_make_translation(kali_tm, dx, dy, 0.0f);
+    mat4array_make_rotation(kali_rm, dt);
 
     int translate_fd = glGetUniformLocation(shader_program, "u_model");
 
@@ -154,11 +129,11 @@ main(int argc, char **argv)
         /** ちょっとキーで何とか動かせれるかどうか */
         input = get_keys();
         if (input & KEY_LEFT) {
-            dt -= TORI_PI / 16;
+            dt -= WINDMILL_PI / 16;
             dx -= 0.001f;
         }
         if (input & KEY_RIGHT) {
-            dt += TORI_PI / 16;
+            dt += WINDMILL_PI / 16;
             dx += 0.001f;
         }
         if (input & KEY_UP) {
@@ -171,14 +146,14 @@ main(int argc, char **argv)
         }
         /** 回ァーーーす　猫ナリ */
         if (input) {
-            tori_get_translate(kali_tm, dx, dy, 0.0f);
+            mat4array_make_translation(kali_tm, dx, dy, 0.0f);
             if (dt > reality_check || dt < reality_check) {
-                tori_get_rotate(kali_rm, dt);
-                tori_multiply(kali_mm, kali_tm);
-                tori_multiply(kali_mm, kali_rm);
-                tori_get_translate(kali_tm, -dx, -dy, 0.0f);
+                mat4array_make_rotation(kali_rm, dt);
+                mat4array_multiply(kali_mm, kali_tm);
+                mat4array_multiply(kali_mm, kali_rm);
+                mat4array_make_translation(kali_tm, -dx, -dy, 0.0f);
             }
-            tori_multiply(kali_mm, kali_tm);
+            mat4array_multiply(kali_mm, kali_tm);
             dx = 0;
             dy = 0;
             dt = 0;
