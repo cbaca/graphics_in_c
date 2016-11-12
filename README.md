@@ -3,17 +3,17 @@
 
 ##Goal: Create a virtual landscape that a use can wander around on. Place a rotating windmill on the ground, along with some buildings.
 
-*Dependencies*:
+### Dependencies:
 - [glfw3](https://www.archlinux.org/packages/community/x86_64/glfw-x11/)
 - [SOIL.h](https://www.archlinux.org/packages/community/i686/soil/)
 - [openGL/glew.h](https://www.archlinux.org/packages/extra/x86_64/glew/)
 
-*Resources used*:
+### Resources used:
 - learnopengl.com
 - [Awesome face image](http://learnopengl.com/img/textures/awesomeface.png)
 - [What Every Programmer Should Know About Memory.pdf](https://www.google.com/search?q=What+every+programmer+should+know+about+memory) by Ulrich Drepper
 
-*Resources I might use*:
+### Resources I might use:
 - [Font image](http://webglfundamentals.org/webgl/resources/8x8-font.png)
 - [Euler Angles](https://en.wikipedia.org/wiki/Aircraft_principal_axes)
 - [Gimbal locks](https://en.wikipedia.org/wiki/Gimbal_lock)
@@ -22,33 +22,35 @@
 - [Particles: a webgl demo application by google](view-source:https://www.khronos.org/registry/webgl/sdk/demos/google/particles/)
 - [Graphics Programming Black Book by Michael Abrash](https://github.com/mcmihai/GPBB)
 
-*Home workspace*:
+### Home workspace:
 - 4.7.2-1-ARCH x86_64 GNU/Linux
 - Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
 
-*Current state*:
+### Current state:
 - Successfully drawing a 2D rectangle with colors and texture from png
 - reading and storing keyboard input successfully
 - matrix math is chaos
 - I can't figure out how to make this damn README display correctly
 
-*Goals*:
-1. use a world coordinate system that is much wider than NVC.
-2. create texture-mapped geometry to represent the ground - using a quad.
-3. use a single cube object to create ALL models.
-4. use instance transformations to translate, scale and rotate all objects.
-5. make at least ONE building have a different color on every side.
-6. use two program objects (two shader programs?): one for textured objects and one for non-textured objects.
-7. place a windmill in the scene: will have different colors for each face for each part, using a minimum of 5 instances of cube objects.
-8. provide keyboard controls: must be scales to make navigation easy for the user
-- w key: toggle windmill blade rotation.
-- y key: toggle windmill spin about the yaw axis.
-- left/right: change direction of view about the yaw axis.
-- up/down: move the user forward/backward along the axis of view.
-9. use perspective projection.
+### Goals:
+- use a world coordinate system that is much wider than NVC.
+- create texture-mapped geometry to represent the ground - using a quad.
+- use a single cube object to create ALL models.
+- use instance transformations to translate, scale and rotate all objects.
+- make at least ONE building have a different color on every side.
+- use two program objects (two shader programs?): one for textured objects,
+  and one for non-textured objects.
+- place a windmill in the scene: will have different colors for each face for
+  each part, using a minimum of 5 instances of cube objects.
+- provide keyboard controls: must be scales to make navigation easy for the user
+    - *w key: toggle windmill blade rotation.*
+    - *y key: toggle windmill spin about the yaw axis.*
+    - *left/right: change direction of view about the yaw axis.*
+    - *up/down: move the user forward/backward along the axis of view.*
+    - *use perspective projection.*
 - don't forget to enable hidden surface removal and clear the depth buffer.
 
-*Todo*:
+### Todo:
 - make a damn windmill
 - generate first 3D cube
 - math/inversion
@@ -58,16 +60,17 @@
 - math/refactoring and optimization
 - math/try x86intrin.h for vectorization and optimization in toriaezu libs
 
-*Next goal:3Dcube*:
+### Next goal:3Dcube:
 - update toriaezu math library to deal with projection/view/clipping
 - update main to get uniform locations for new mat4s
 - consider making seperate object file for input controls/matrix operations
-- refactor refactor refactor refactor again and again and over and over until my highschool math textbook gets jealous
 
-*Need to know vocab*:
-- NDC aka Normalized Device Coordinates: range of coordinate visibility. Typically between -1.0 and 1.0.
+### Need to know vocab:
+- NDC aka Normalized Device Coordinates: range of coordinate visibility,
+  minus 1.0 to plus 1.0
 
-*Current direcotry tree courtesy of tree http://mama.indstate.edu/users/ice/tree/*:
+### Current direcotry tree courtesy of [tree](http://mama.indstate.edu/users/ice/tree/):
+```
 .
 ├── base
 │   ├── graphics.c
@@ -97,4 +100,4 @@
     ├── toriaezu_matrix.c
     ├── toriaezu_matrix.h
     └── _vec.h
-6 directories, 32 files
+```
