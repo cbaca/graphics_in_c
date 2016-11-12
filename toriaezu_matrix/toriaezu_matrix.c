@@ -22,26 +22,18 @@
  * refactor rotation
  */
 
-/* cosider pthread.h or omp.h later */
+/* cosider implementing later:
+ * ・pthread.h or
+ * ・omp.h
+ */
 
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
-#include "_toriaezu_matrix.h"
-
-struct _Vectors
-_vectorize(float *matrix)
-{
-    struct _Vectors vec;
-    vec.a = matrix;
-    matrix += VECTOR_SIZE;
-    vec.b = matrix;
-    matrix += VECTOR_SIZE;
-    vec.c = matrix;
-    matrix += VECTOR_SIZE;
-    vec.d = matrix;
-    return vec;
-}
+#include "toriaezu_matrix.h"
+#include "macros.h"
+#include "enum.h"
+#include "data_type.h"
 
 void
 tori_set(float *restrict matrix, int style)
@@ -49,15 +41,15 @@ tori_set(float *restrict matrix, int style)
     int i;
     switch (style) {
         case TORI_DEBUG:
-            for (i = 0; i < MATRIX_SIZE; ++i)
+            for (i = 0; i < MAT_SIZE; ++i)
                 matrix[i] = _DebugMatrix[i];
             break;
         case TORI_IDENTITY:
-            for (i = 0; i < MATRIX_SIZE; ++i)
+            for (i = 0; i < MAT_SIZE; ++i)
                 matrix[i] = _IdentityMatrix[i];
             break;
         case TORI_ZERO:
-            for (i = 0; i < MATRIX_SIZE; ++i)
+            for (i = 0; i < MAT_SIZE; ++i)
                 matrix[i] = _ZeroMatrix[i];
             break;
         default:
@@ -68,10 +60,10 @@ tori_set(float *restrict matrix, int style)
 void
 tori_copy(float *restrict new, /* const */float *restrict old)
 {
-    struct _Vectors new_v = _vectorize(new);
-    struct _Vectors old_v = _vectorize(old);
+    /* struct */ _Vec new_v = _vectorize(new);
+    /* struct */ _Vec old_v = _vectorize(old);
     int i = 0;
-    for (; i < VECTOR_SIZE; ++i) {
+    for (; i < VEC_SIZE; ++i) {
         new_v.a[i] = old_v.a[i];
         new_v.b[i] = old_v.b[i];
         new_v.c[i] = old_v.c[i];
@@ -85,18 +77,18 @@ tori_multiply(
     , float *restrict b)
 {
     /* やりなおそ */
-    float A[MATRIX_SIZE] = { 0 };
-    float B[MATRIX_SIZE] = { 0 };
+    float A[MAT_SIZE] = { 0 };
+    float B[MAT_SIZE] = { 0 };
     tori_copy(A, a);
     tori_copy(B, b);
     tori_transpose(B);
     tori_set(a, TORI_ZERO);
 
-    struct _Vectors vec_c = _vectorize(a);
-    struct _Vectors vec_a = _vectorize(A);
-    struct _Vectors vec_b = _vectorize(B);
+    /* struct */ _Vec vec_c = _vectorize(a);
+    /* struct */ _Vec vec_a = _vectorize(A);
+    /* struct */ _Vec vec_b = _vectorize(B);
     int i = 0;
-    for (; i < VECTOR_SIZE; ++i) {
+    for (; i < VEC_SIZE; ++i) {
         vec_c.a[0] += vec_a.a[i] * vec_b.a[i];
         vec_c.a[1] += vec_a.a[i] * vec_b.b[i];
         vec_c.a[2] += vec_a.a[i] * vec_b.c[i];
@@ -123,9 +115,9 @@ void
 tori_get_translate(float *restrict matrix, float x, float y, float z)
 {
     tori_set(matrix, TORI_IDENTITY);
-    struct _Vectors vec = _vectorize(matrix);
+    /* struct */ _Vec vec = _vectorize(matrix);
     int i = 0;
-    for (; i < VECTOR_SIZE; ++i)
+    for (; i < VEC_SIZE; ++i)
         vec.d[i] += vec.a[i] * x + vec.b[i] * y + vec.c[i] * z;
 }
 
@@ -174,11 +166,11 @@ tori_get_rotate(float *restrict new, double theta)
 void
 tori_transpose(float *restrict a)
 {
-    float copy[MATRIX_SIZE] = { 0 };
+    float copy[MAT_SIZE] = { 0 };
     float *restrict b;
     tori_copy(copy, a);
     int i = 0, j;
-    for (; i < VECTOR_SIZE; a += VECTOR_SIZE, ++i)
-        for (b = copy, j = 0; j < VECTOR_SIZE; b += VECTOR_SIZE, ++j)
+    for (; i < VEC_SIZE; a += VEC_SIZE, ++i)
+        for (b = copy, j = 0; j < VEC_SIZE; b += VEC_SIZE, ++j)
             a[j] = b[i];
 }

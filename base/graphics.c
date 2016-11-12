@@ -14,8 +14,8 @@ const char *const *VSHADER_STRING = (const char *[]) {
     "out vec2 v_tex; "
 
     "uniform mat4 u_model; "
-    //"uniform mat4 u_view; "
-    //"uniform mat4 u_projection; "
+    // "uniform mat4 u_view; "
+    // "uniform mat4 u_projection; "
     // "uniform mat4 u_normal; "
 
     "void main() "

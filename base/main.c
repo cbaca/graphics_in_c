@@ -17,8 +17,8 @@
  *      coordinate systems（いちばん細かくから）
  *         ・  ローカル・
  *         ・  ワールド・スペースを取り出せる
- *         ・    ビュー・スペース（自分が立ってて目から除いでる観点）
- *         ・  クリップ・スペース（画面に映すためにcoordを -1.0～1.0 に
+ *         ・    ビュー・スペース（自分の立場の観点）
+ *         ・  クリップ・スペース（画面に映るように座標をNDCに戻す
  *         ・スクリーン・スペース・ファックイェーア！
  *              もしくはviewport transform
  *
@@ -45,6 +45,27 @@
  *
  *  ようするにVclip = Mprojection ・Mview ・Mmodel ・Vlocal
  *  現実にやるときはこの連続の逆パタンだって
+ *
+ *  ヨー、ピッチ、ロールに含まれっテイル「オイラー角」の理解しやすい考えかたです
+ *  ・ロールと言えば、飛び中飛行機は曲がるときに右側の羽か左側の羽どっちかが下へ
+ *    、もうどっちかが上へ。ときに、飛行機の体が周り回転するじゃないですか。って
+ *    ことなら、飛行機自体がX軸みたいじゃーーん。そして「回転」って英語で言おう
+ *    と思えば、「ロール」って言わないっけ？だよな！ほら、飛行機 ＝ ロール ＝ X軸
+ *  ・ピッチがY回転軸やったな。思いたかったと違ってYは縦じゃなくて、
+ *    飛行機の羽の先がつなげられる線のほうだったらしい。と覚えとけば、後は飛行機が
+ *    上か下に迎えるときにのその羽の間の線を考えればいいから。直感的にわかりやすいかも
+ *    まぁ、とりあえずピッチがY回転軸です。そして、Y回転軸がX回転軸じゃないはの横に
+ *    なってるやつです。
+ *  ・ヨーがZです。なぜならXとYはもうとられている。そんだけです。直感的にわかりやすい
+ *    飛考え方は、行機は飛んでる間にゴジラとか狂人とかに攻撃された場合だけしかに直接
+ *    曲がらない回転軸。それ縦のやつだったな。わかりやすべ？
+ *  要約に、
+ *  ・ロールが横のX。からの
+ *  ・ビッチがもう一つの横のY。
+ *  ・ヨーが縦のZ。お終了です。
+ *  ・理由は意味不明。おやすみなさい。
+ *  やっぱ説明としてくそやけこれも見といてください：
+ *    https://en.wikipedia.org/wiki/Aircraft_principal_axes
  */
 
 #include <string.h>
@@ -58,21 +79,19 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "../includes/toriaezu_matrix.h"
+#include "../includes/input.h"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
-#define SHADER_BUFFER_SIZE 512
 
 /** 関数プロトタイプ宣言 */
-extern void *window_init(int, int);       /** window.c   */
-extern void debug_print_keys();           /** window.c   */
-extern int get_keys();                    /** input.c    */
-
-extern int gl_glew_init(int, int);
-extern unsigned int shader_init();
+extern void *window_init(int, int);  /** window.c */
+extern void debug_print_keys();      /** window.c */
+extern int gl_glew_init(int, int);   /** window.c */
+extern unsigned int shader_init();   /** window.c */
 extern int init_shader_variables(
   unsigned int *, unsigned int *, unsigned int *, unsigned int *);
-extern void get_gpu_info();
+extern void get_gpu_info();          /** window.c */
 
 int
 main(int argc, char **argv)
@@ -85,11 +104,11 @@ main(int argc, char **argv)
 
     /** 変数宣言 */
     GLFWwindow *window = NULL;
-    GLuint vbo = 0 /** vertex buffer object  */
-         , vao = 0 /** vertex array object   */
-         , ebo = 0 /** element buffer object */
-         , texture_fd = 0 /** テキスチャー記述（きじゅつ）*/
-         , shader_program = 0
+    GLuint vbo = 0            /** 頂点バッファーオブジェクト       */
+         , vao = 0            /** 頂点配列オブジェクト             */
+         , ebo = 0            /** エレメントバッファーオブジェクト */
+         , texture_fd = 0     /** テキスチャー記述子               */
+         , shader_program = 0 /** シェーダープログラム記述子       */
          ;
 
     /** 頂点シェーダーと連絡するためのファイル記述子 */
@@ -98,12 +117,10 @@ main(int argc, char **argv)
     //   , pers_fd = 0  /** "u_perspective */
     //   ;
 
-    // float model_m[MATRIX_SIZE];
-    // float view_m[MATRIX_SIZE];
-    // float proj_m[MATRIX_SIZE];
-
-    /** とりあえーーーーずだけ */
-    int translate_fd = 0;
+    /** 4x4単精度浮動小数点数行列: VSに渡します */
+    // mat4 model_m[MAT_SIZE];
+    // mat4 view_m[MAT_SIZE];
+    // mat4 proj_m[MAT_SIZE];
 
     window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!window)
@@ -122,21 +139,21 @@ main(int argc, char **argv)
         exit(EXIT_FAILURE);
 
 
-/** こっからは必要なくなる */
+/** こっからは必要なくなるものが多い */
     float reality_check = 0;
     float dt = 0;
     float dx = 0.1f;
     float dy = 0.1f;
-    float kali_mm[MATRIX_SIZE] = { 0 };
-    float kali_tm[MATRIX_SIZE] = { 0 };
-    float kali_rm[MATRIX_SIZE] = { 0 };
+    mat4 kali_mm[MAT_SIZE] = { 0 };
+    mat4 kali_tm[MAT_SIZE] = { 0 };
+    mat4 kali_rm[MAT_SIZE] = { 0 };
     int input = 0;
 
     tori_set(kali_mm, TORI_IDENTITY);
     tori_get_translate(kali_tm, dx, dy, 0.0f);
     tori_get_rotate(kali_rm, dt);
 
-    translate_fd = glGetUniformLocation(shader_program, "u_model");
+    int translate_fd = glGetUniformLocation(shader_program, "u_model");
 
     /** プログラム・ループ */
     while (!glfwWindowShouldClose(window)) {
