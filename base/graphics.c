@@ -14,12 +14,13 @@ const char *const *VSHADER_STRING = (const char *[]) {
     "out vec2 v_tex; "
 
     "uniform mat4 u_model; "
-    // "uniform mat4 u_view; "
+    "uniform mat4 u_view; "
     // "uniform mat4 u_projection; "
 
     "void main() "
     "{ "
     // "   gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0f); "
+    // "   gl_Position = u_view * u_model * vec4(a_position, 1.0f); "
     "   gl_Position = u_model * vec4(a_position, 1.0f); "
     // "   v_color = a_color; "
     "   v_tex = vec2(a_tex.x, 1.0 - a_tex.y); "
@@ -70,6 +71,7 @@ unsigned int INDEX_ARRAY3[6] = {
 };
 
 /* 色いれとこ */
+/*
 float VERTICES36[288] = {
       -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f
     ,  0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f
@@ -113,8 +115,8 @@ float VERTICES36[288] = {
     , -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f,  0.0f, 0.0f
     , -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,  0.0f, 1.0f
 };
+*/
 /** learnopengl.comのおすずめ:3次元箱になる */
-/*
 float VERTICES36[180] = {
       -0.5f, -0.5f, -0.5f,  0.0f, 0.0f
     ,  0.5f, -0.5f, -0.5f,  1.0f, 0.0f
@@ -158,7 +160,6 @@ float VERTICES36[180] = {
     , -0.5f,  0.5f,  0.5f,  0.0f, 0.0f
     , -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
-*/
 
 /** ３次元キューブにこれを使えと */
 /*

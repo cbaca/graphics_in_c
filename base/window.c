@@ -81,7 +81,7 @@ init_shaders(
       unsigned int *shader_program
     , unsigned int *vao
     , unsigned int *vbo
-    , unsigned int *ebo
+//    , unsigned int *ebo
     , unsigned int *tex
     )
 {
@@ -91,7 +91,7 @@ init_shaders(
 
     *vao = _init_vao();
     *vbo = _init_vbo();
-    *ebo = _init_ebo();
+//    *ebo = _init_ebo();
 
     const int array_stride = (int)(5 * sizeof(float));
     const int position_size = 3;
@@ -128,9 +128,10 @@ init_shaders(
     glBindVertexArray(0);
 
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // glEnable(GL_DEPTH_TEST/* | GL_BLEND */);
+    glEnable(GL_DEPTH_TEST/* | GL_BLEND */);
 
-    return (int)(*vao && *vbo && *ebo && *tex);
+    // return (int)(*vao && *vbo && *ebo && *tex);
+    return (int)(*vao && *vbo && *tex);
 }
 
 unsigned int
@@ -213,14 +214,9 @@ _init_vbo()
      * GL_DYNAMIC_DRAW:　実行中データはいっぱい変わっちゃう可能性が高い
      * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
      */
-    glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
-    /*
+ // glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
     glBufferData(
-          GL_ARRAY_BUFFER
-        , sizeof VERTICES36
-        , VERTICES36
-        , GL_STATIC_DRAW);
-    */
+    GL_ARRAY_BUFFER, sizeof VERTICES36, VERTICES36, GL_STATIC_DRAW);
     return vbo;
 }
 

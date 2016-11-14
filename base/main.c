@@ -38,7 +38,7 @@ extern int init_shaders(
       unsigned int *
     , unsigned int *
     , unsigned int *
-    , unsigned int *
+    // , unsigned int *
     , unsigned int *);
 extern void get_gpu_info();
 extern void init_uniforms(unsigned int, int *, int *, int *);
@@ -56,7 +56,7 @@ main(int argc, char **argv)
     GLFWwindow *window = NULL;
     GLuint vbo = 0
          , vao = 0
-         , ebo = 0
+         // , ebo = 0
          , texture_fd = 0
          , shader_program = 0
          ;
@@ -71,37 +71,34 @@ main(int argc, char **argv)
     if (!window)
         exit(EXIT_FAILURE);
 
-    if (!init_shaders(&shader_program, &vao, &vbo, &ebo, &texture_fd))
+    if (!init_shaders(&shader_program, &vao, &vbo, /* &ebo, */  &texture_fd))
         exit(EXIT_FAILURE);
 
 
-/*** こっからはいろいろ変わったりするけ壊せんでな */
 
     // init_uniforms(shader_program, &model_fd, &view_fd, &pers_fd);
     model_fd = glGetUniformLocation(shader_program, "u_model");
     view_fd = glGetUniformLocation(shader_program, "u_view");
     pers_fd = glGetUniformLocation(shader_program, "u_perspective");
 
+/*** こっからはいろいろ変わったりするけ壊せんでな */
     /** 4x4単精度浮動小数点数行列: VSに渡します */
-    // float model_m[MAT4ARRAY_LEN];
-    // float view_m[MAT4ARRAY_LEN];
-    // float proj_m[MAT4ARRAY_LEN];
+    float model_m[MAT4ARRAY_LEN];
+    float view_m[MAT4ARRAY_LEN];
+    float proj_m[MAT4ARRAY_LEN];
 
     const float oneOfour = 1.0f / 4.0f;
     float box_rad = 0;
     float box_dx = 0.0f;
     float box_dy = 0.0f;
     int input = 0;
-    /*
-    */
-    float model_m[MAT4ARRAY_LEN];
-    float view_m[MAT4ARRAY_LEN];
-    float proj_m[MAT4ARRAY_LEN];
-    // const float rad = WINDMILL_PI4;
-    // const float ar = WINDOW_WIDTH / WINDOW_HEIGHT;
     mat4array_set(model_m, MAT4ARRAY_IDENTITY);
     mat4array_set(view_m, MAT4ARRAY_IDENTITY);
     mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
+    // float tmv = (GLfloat)glfwGetTime() * WINDMILL_PI4;
+    // const float rad = WINDMILL_PI4;
+    // const float ar = WINDOW_WIDTH / WINDOW_HEIGHT;
+    // mat4array_get_perspective(proj_m, rad, ar, 0.1f, 100.0f);
     do { /** プログラム・ループ */
 
         glfwPollEvents();
@@ -115,13 +112,6 @@ main(int argc, char **argv)
 
         /** シェーダープログラムを選びます。*/
         glUseProgram(shader_program);
-
-        // float tmv = (GLfloat)glfwGetTime() * WINDMILL_PI4;
-
-        // mat4array_rotate(model_m, 0., 0.5f, 0.0f, 0.0f);
-        // mat4array_rotate(model_m, rad, 0.0f, 0.0f, 1.0f);
-        // mat4array_translate(view_m, 0.0f, 0.0f, -0.3f);
-        // mat4array_get_perspective(proj_m, rad, ar, 0.1f, 10.0f);
 
         /** ユーザー入力 */
         /*
@@ -142,14 +132,16 @@ main(int argc, char **argv)
             box_dy += 0.01f;
         }
         // if (input & KEY_SHIFT) { }
-        mat4array_translate(model_m, box_dx, box_dy, 0.0f);
+        mat4array_translate(view_m, 0.0f, 0.0f, -0.3f);
+        // mat4array_translate(model_m, box_dx, box_dy, 0.0f);
         mat4array_rotate(model_m, box_rad, 0.0f, 0.0f, 1.0f);
         if (input) {
+            mat4array_get_product(model_m, view_m);
             box_dx = 0.0f;
             box_dy = 0.0f;
             box_rad = 0.0f;
         }
-
+        // mat4array_get_product(view_m, proj_m);
         /** シェーダーに変換行列データー渡します */
         glUniformMatrix4fv(model_fd, 1, GL_FALSE, model_m);
         glUniformMatrix4fv(view_fd, 1, GL_FALSE, view_m);
@@ -159,8 +151,8 @@ main(int argc, char **argv)
         glBindVertexArray(vao);
 
         /** 実際に画面に結果を画面にGPUにお願いする */
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         /** VAOなど変えたりしないといけないときもあるからとりあえず外す*/
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -175,7 +167,7 @@ main(int argc, char **argv)
     /* メモリリーク出ないように・・・な！*/
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
+    // glDeleteBuffers(1, &ebo);
     glfwTerminate();
     return EXIT_SUCCESS;
 }
