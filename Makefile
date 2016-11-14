@@ -14,9 +14,10 @@ INPUT_DIR = utils/input
 
 OBJS = obj/main.o obj/graphics.o obj/window.o obj/input.o
 
-OBJS += obj/make_rowVecMat4.o obj/mat4array_transpose.o
+OBJS += obj/vecMat4.o obj/mat4array_transpose.o
 OBJS += obj/mat4array_translate.o obj/mat4array_rotate.o obj/mat4array_print.o
-OBJS += obj/mat4array_multiply.o obj/mat4array_make.o obj/mat4array_copy.o
+OBJS += obj/mat4array_multiply.o obj/mat4array_set.o obj/mat4array_copy.o
+OBJS += obj/mat4array_scale.o obj/mat4array_perspective.o
 
 $(NAME):$(OBJS)
 	$(CC) -o $@ $^ $(LIBS) -Lobj
@@ -34,7 +35,7 @@ obj/window.o:base/window.c
 obj/input.o:$(INPUT_DIR)/input.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
-obj/make_rowVecMat4.o:$(GEO_DIR)/rowVecMat4/make_rowVecMat4.c
+obj/vecMat4.o:$(GEO_DIR)/vecMat4/vecMat4.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lobj
 
 obj/mat4array_transpose.o:$(GEO_DIR)/mat4array_transpose.c
@@ -52,10 +53,16 @@ obj/mat4array_print.o:$(GEO_DIR)/mat4array_print.c
 obj/mat4array_multiply.o:$(GEO_DIR)/mat4array_multiply.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lobj
 
-obj/mat4array_make.o:$(GEO_DIR)/mat4array_make.c
+obj/mat4array_set.o:$(GEO_DIR)/mat4array_set.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lobj
 
 obj/mat4array_copy.o:$(GEO_DIR)/mat4array_copy.c
+	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lobj
+
+obj/mat4array_scale.o:$(GEO_DIR)/mat4array_scale.c
+	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lobj
+
+obj/mat4array_perspective.o:$(GEO_DIR)/mat4array_perspective.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@ -Lobj
 
 .PHONY: clean

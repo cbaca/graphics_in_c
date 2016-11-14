@@ -2,21 +2,76 @@
 #ifndef WINDMILL_MAT4ARRAY_H_
 #define WINDMILL_MAT4ARRAY_H_
 /** these may come in handy
-#define TORI_PI 3.141592653589793238462643383279502884197169399375105820974f
-#define TORI_PI2 1.570796326794896619231321691639751442098584699687552910487f
-#define TORI_PI3 1.047197551196597746154214461093167628065723133125035273658f
-#define TORI_PI4 0.785398163397448309615660845819875721049292349843776455243f
-#define TORI_PI6 0.523598775598298873077107230546583814032861566562517636829f
-#define TORI_TAU 6.283185307179586476925286766559005768394338798750211641949f
 */
-#define WINDMILL_PI 3.141592653589793238462643383279502884197169399375105820974f
-// #include "../utils/geometry/include/mat4array_copy.h"
-#include "../utils/geometry/include/mat4array_make.h"
-#include "../utils/geometry/include/mat4array_multiply.h"
-#include "../utils/geometry/include/mat4array_print.h"
-#include "../utils/geometry/include/mat4array_rotate.h"
-#include "../utils/geometry/include/mat4array_translate.h"
-// #include "../utils/geometry/include/mat4array_transpose.h"
-// #include "../utils/geometry/include/rowVecMat4.h"
-/** jesus christ, what am I doing this feels very wrong */
+#define WINDMILL_PI  3.14159265358979323846264338327950288419716939937510582097f
+#define WINDMILL_PI2 1.57079632679489661923132169163975144209858469968755291048f
+#define WINDMILL_PI3 1.04719755119659774615421446109316762806572313312503527365f
+#define WINDMILL_PI4 0.78539816339744830961566084581987572104929234984377645524f
+#define WINDMILL_PI6 0.52359877559829887307710723054658381403286156656251763682f
+#define WINDMILL_TAU 6.28318530717958647692528676655900576839433879875021164194f
+
+// "../utils/geometry/mat4array_copy.c"
+extern void mat4array_copy(float *restrict out, const float *restrict in);
+
+// "../utils/geometry/mat4array_multiply.c"
+extern void mat4array_get_product(float *restrict, float *restrict);
+
+// "../utils/geometry/mat4array_perspective.c"
+extern void mat4array_get_perspective(
+    float *restrict, const float, const float, const float, const float);
+
+// "../utils/geometry/mat4array_print.c"
+extern void mat4array_print(const float *);
+
+//ROTATION///////////////////////////////////////////////////////ROTATION
+/* @params
+ *  4x4 matrix (float[16])
+ *  angle in radians
+ *  MAT4ARRAY_ROLL | MAT4ARRAY_PITCH | MAT4ARRAY_YAW
+ */
+extern void mat4array_get_rotation(float *restrict, double, int);
+/* @params
+ *  4x4matrix (float[16])
+ *  angle in radians
+ *  x coordinate
+ *  y coordinate
+ *  z coordinate
+ */
+extern void mat4array_rotate(float *restrict, double, float, float, float);
+extern void mat4array_rotatev(float *restrict, double, float *restrict);
+
+//SCALE/////////////////////////////////////////////////////////////SCALE
+extern void mat4array_get_scaled(float *restrict, float, float, float);
+
+/** ../utils/geometry/mat4array_set.c */
+/*
+ */
+extern void mat4array_set(float *restrict, int);
+
+//TRANSLATION/////////////////////////////////////////////////TRANSLATION
+/** ../utils/geometry/mat4array_translate.c */
+/* @params
+ *  4x4 matrix(float[16])
+ *  x coordinate
+ *  y coordinate
+ *  z coordinate
+ */
+extern void mat4array_get_translation(float *restrict, float, float, float);
+/* @params
+ *  4x4 matrix(float[16])
+ *  x coordinate
+ *  y coordinate
+ *  z coordinate
+ */
+extern void mat4array_translate(float *restrict, float, float, float);
+/* @params
+ *  4x4 matrix(float[16])
+ *  len 3 vector
+ */
+extern void mat4array_translatev(float *restrict, float *restrict);
+
+// "../utils/geometry/mat4array_transpose.c"
+extern void mat4array_transpose(float *restrict);
+#include "../utils/geometry/header/mat4array_defs.h"
+#include "../utils/geometry/header/mat4array_euler_defs.h"
 #endif

@@ -1,5 +1,4 @@
 /** mat4array_print.c */
-
 #include <stdio.h>
 
 void

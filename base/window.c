@@ -10,7 +10,6 @@
 #include <GLFW/glfw3.h>
 #include <SOIL/SOIL.h>
 #include <stdio.h>
-#include "../include/input.h"
 #include "window.h"
 
 /** 関数プロトタイプ宣言 */
@@ -33,12 +32,9 @@ window_init(int w, int h)
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
     /** glfw window初期化 */
-    window = glfwCreateWindow(
-        //  WINDOW_WIDTH, WINDOW_HEIGHT
-          w, h
-        , "Windmill hell yeah we got it from window.c"
-        , NULL, NULL
-    );
+    window = glfwCreateWindow( w, h
+        , "Windmill hell yeah we got it from window.c" , NULL, NULL);
+
     if (!window) {
         fprintf(stderr, "Failed to create GLFW window\n");
         glfwTerminate();
@@ -49,11 +45,22 @@ window_init(int w, int h)
     /** キー押されたばい_key_callback関数は呼ばれます */
     glfwSetKeyCallback(window, _key_callback);
 
+    if (!_gl_glew_init(w, h))
+        return NULL;
+
     return window;
 }
 
+void
+get_gpu_info()
+{
+    int n;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &n);
+    printf("\n\n\tmax attributes: %i\n\n", n);
+}
+
 int
-gl_glew_init(int w, int h)
+_gl_glew_init(int w, int h)
 {
     /** glew初期化 */
     glewExperimental = GL_TRUE;
@@ -68,28 +75,25 @@ gl_glew_init(int w, int h)
     return 1;
 }
 
-void
-get_gpu_info()
-{
-    int n;
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &n);
-    printf("\n\n\tmax attributes: %i\n\n", n);
-}
-
 /**　glオブジェクト初期化 */
 int
-init_shader_variables(
-      unsigned int *vao
+init_shaders(
+      unsigned int *shader_program
+    , unsigned int *vao
     , unsigned int *vbo
     , unsigned int *ebo
     , unsigned int *tex
     )
 {
+    *shader_program = _shader_program_init();
+    if (!shader_program)
+        return 0;
+
     *vao = _init_vao();
     *vbo = _init_vbo();
     *ebo = _init_ebo();
 
-    const int array_stride = (int)(8 * sizeof(float));
+    const int array_stride = (int)(5 * sizeof(float));
     const int position_size = 3;
     glVertexAttribPointer(
           VS_POSITION_LOC, position_size
@@ -98,6 +102,7 @@ init_shader_variables(
     );
     glEnableVertexAttribArray(VS_POSITION_LOC);
 
+    /*
     const int color_size = 3;
     glVertexAttribPointer(
           VS_COLOR_LOC, color_size
@@ -105,12 +110,13 @@ init_shader_variables(
         , array_stride, (void *)(3 * sizeof(float))
     );
     glEnableVertexAttribArray(VS_COLOR_LOC);
+    */
 
     const int texture_size = 2;
     glVertexAttribPointer(
           VS_TEXTURE_LOC, texture_size
         , GL_FLOAT, GL_FALSE
-        , array_stride, (void *)(6 * sizeof(float))
+        , array_stride, (void *)(3 * sizeof(float))
     );
     glEnableVertexAttribArray(VS_TEXTURE_LOC);
     *tex = _init_texture();
@@ -121,11 +127,14 @@ init_shader_variables(
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_DEPTH_TEST/* | GL_BLEND */);
+
     return (int)(*vao && *vbo && *ebo && *tex);
 }
 
 unsigned int
-shader_init()
+_shader_program_init()
 {
     char info_log_buffer[LOG_BUFFER_SIZE];
     int sc_success;
@@ -205,6 +214,13 @@ _init_vbo()
      * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
      */
     glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
+    /*
+    glBufferData(
+          GL_ARRAY_BUFFER
+        , sizeof VERTICES36
+        , VERTICES36
+        , GL_STATIC_DRAW);
+    */
     return vbo;
 }
 
@@ -248,4 +264,12 @@ _init_texture()
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return texture_fd;
+}
+
+void
+init_uniforms(unsigned int shader_fd, int *model_fd, int *view_fd, int *pers_fd)
+{
+    *model_fd = glGetUniformLocation(shader_fd, "u_model");
+    *view_fd = glGetUniformLocation(shader_fd, "u_view");
+    *pers_fd = glGetUniformLocation(shader_fd, "u_perspective");
 }

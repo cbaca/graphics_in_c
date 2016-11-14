@@ -9,9 +9,12 @@
 - [openGL/glew.h](https://www.archlinux.org/packages/extra/x86_64/glew/)
 
 ### Resources used:
-- learnopengl.com
+- [Rotation matrices](https://en.wikipedia.org/wiki/Rotation_matrix)
 - [Awesome face image](http://learnopengl.com/img/textures/awesomeface.png)
-- [What Every Programmer Should Know About Memory.pdf](https://www.google.com/search?q=What+every+programmer+should+know+about+memory) by Ulrich Drepper
+- [learnopengl.com pdf](http://learnopengl.com/book/offline%20learnopengl.pdf) by Joey de Vries.
+- [Vector normalization](http://www.fundza.com/vectors/normalize/)
+- [OpenGL Projection Matrix](http://www.songho.ca/opengl/gl_projectionmatrix.html) by Song He Ahn.
+- [What Every Programmer Should Know About Memory.pdf](https://www.google.com/search?q=What+every+programmer+should+know+about+memory) by Ulrich Drepper.
 
 ### Resources I want to use, but haven't had a chance yet:
 - [Particles](https://www.khronos.org/registry/webgl/sdk/demos/google/particles/)
@@ -29,10 +32,29 @@
 - CPU: Intel(R) Core(TM) i5-2320 CPU @ 3.00GHz (sandybridge)
 - GPU: AMD Redwood LE Radeon HD 5550/5570/5630/6390/6490/7570
 
-### Current state:
-- Successfully drawing a 2D rectangle with colors and texture from png
-- reading, storing, and interacting with keyboard input successfully
-- matrix math is not breaking the program, I think
+### Next goal 3Dcube:
+- update geometry math dir with projection/view/clipping, converting
+  coordinates for objects between spaces:
+    - local space, local object coords.
+    - world space(uses MODEL matrix), coordinates of each object relative to
+      the "world". Model matrix will place an object in the world using
+      transformations: translate/scale/rotate.
+    - view space(used VIEW matrix), transforms world space to coordinates that
+      are in front of the user's view. Accomplished with a combination of
+      translations and rotations that will move the scene so that certain items
+      are transformed to the front of the camera.
+    - clipping(projection matrix), specifies a range of coords e.g. -1000 to
+      1000 in each dimansion. Then, transforms the coords within this range to
+      NDC(-1.0 to 1.0). This conversion is like creating a "viewing box", which
+      is called the "frustrum"(if you cut off the tip of a pyramid, the plane
+      that the knife was parallel to would be the frustrum). Everything in the
+      frustrum after conversion will be displayed.
+        - perspective division: division of x, y, and z components of position
+          vectors by the vector's homogeneous W component(performed
+          automagically by the end of each vshader run?, Joey de Vries, pg98).
+    - screen space: resulting coordingates are mapped to screen coords using
+      settings of glViewport, and turned into fragments.
+- consider making seperate object file for input controls/matrix operations
 
 ### Goals:
 - use a world coordinate system that is much wider than NVC.
@@ -55,22 +77,15 @@
 ### Todo:
 - make a damn windmill
 - generate first 3D cube
-- update toriaezu_matrix
-    - inversion
-    - orthogonal projection
-    - perspective projection
-    - viewing matrix
-    - refactoring and optimization
-    - try x86intrin.h for vectorization and optimization in toriaezu libs
-
-### Next goal:3Dcube:
-- update toriaezu math library to deal with projection/view/clipping
-- update main to get uniform locations for new mat4s
-- consider making seperate object file for input controls/matrix operations
+- perspective projection
+- viewing matrix
+- refactoring and optimization
+    - try x86intrin.h for vectorization and optimization in geometry math
 
 ### Need to know vocab:
 - NDC aka Normalized Device Coordinates: range of coordinate visibility,
   minus 1.0 to plus 1.0
+- HSR aka hidden surface removal
 
 ### Current direcotry tree courtesy of [tree](http://mama.indstate.edu/users/ice/tree/):
 ```

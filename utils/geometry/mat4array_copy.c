@@ -1,5 +1,4 @@
 /** mat4array_copy.c */
-
 void
 mat4array_copy(float *restrict out, const float *restrict in)
 {

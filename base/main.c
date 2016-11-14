@@ -2,32 +2,18 @@
  *  @author cy baca
  *  comments in japanese because it looks cool and I can so gomd
  *
- *  **double asterisk comments are descriptive of the program and meant to stay
- *  *single asterisk comments should be temporary
- *
  *  次: ３Dキューブを書いてみましょう
  *      coordinate systems（いちばん細かくから）
- *         ・  ローカル・
- *         ・  ワールド・スペースを取り出せる
+ *         ・  ローカル・スペース がモデル・マトリクスをつかうんだっけ
+ *         ・  ワールド・スペース
  *         ・    ビュー・スペース（自分の立場の観点）
  *         ・  クリップ・スペース（画面に映るように座標をNDCに戻す
  *         ・スクリーン・スペース・ファックイェーア！
  *              もしくはviewport transform
  *
- *  float get_perspective(
- *        field_of_view // size of viewspace
- *      , aspect_ratio  // viewport_w / viewport_h
- *      , near_plane
- *      , far_plane
- *  );
- *
- *  ようするにVclip = Mprojection ・Mview ・Mmodel ・Vlocal
- *  現実にやるときはこの連続の逆だそうです
- *
- *  ヨー、ピッチ、ロールに含まれっテイル「オイラー角」に付いて
- *  ・ロール:横のX
- *  ・ビッチ:横のY
- *  ・ヨー  :縦のZ
+ *  ようするにVclip = Mprojection ・Mview ・Mmodel ・Vlocalってことは
+ *  デ・ブィ・デ・シェーダーのとこはこういう風に書くんだだろな：
+ *  a_Position = u_projection * u_view * u_model * vec4(a_Position, 1.0)
  */
 
 #include <string.h>
@@ -48,11 +34,14 @@
 /** window.cで現実にされている関数プロトタイプ宣言 */
 extern void *window_init(int, int);
 extern void debug_print_keys();
-extern int gl_glew_init(int, int);
-extern unsigned int shader_init();
-extern int init_shader_variables(
-  unsigned int *, unsigned int *, unsigned int *, unsigned int *);
+extern int init_shaders(
+      unsigned int *
+    , unsigned int *
+    , unsigned int *
+    , unsigned int *
+    , unsigned int *);
 extern void get_gpu_info();
+extern void init_uniforms(unsigned int, int *, int *, int *);
 
 int
 main(int argc, char **argv)
@@ -65,112 +54,122 @@ main(int argc, char **argv)
 
     /** 変数宣言 */
     GLFWwindow *window = NULL;
-    GLuint vbo = 0            /** 頂点バッファーオブジェクト       */
-         , vao = 0            /** 頂点配列オブジェクト             */
-         , ebo = 0            /** エレメントバッファーオブジェクト */
-         , texture_fd = 0     /** テキスチャー記述子               */
-         , shader_program = 0 /** シェーダープログラム記述子       */
+    GLuint vbo = 0
+         , vao = 0
+         , ebo = 0
+         , texture_fd = 0
+         , shader_program = 0
          ;
 
     /** 頂点シェーダーと連絡するためのファイル記述子 */
-    // int model_fd = 0 /** "u_model"      */
-    //   , view_fd = 0  /** "u_view"       */
-    //   , pers_fd = 0  /** "u_perspective */
-    //   ;
+    int model_fd = 0 /** "u_model"      */
+      , view_fd = 0  /** "u_view"       */
+      , pers_fd = 0  /** "u_perspective */
+      ;
+
+    window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
+    if (!window)
+        exit(EXIT_FAILURE);
+
+    if (!init_shaders(&shader_program, &vao, &vbo, &ebo, &texture_fd))
+        exit(EXIT_FAILURE);
+
+
+/*** こっからはいろいろ変わったりするけ壊せんでな */
+
+    // init_uniforms(shader_program, &model_fd, &view_fd, &pers_fd);
+    model_fd = glGetUniformLocation(shader_program, "u_model");
+    view_fd = glGetUniformLocation(shader_program, "u_view");
+    pers_fd = glGetUniformLocation(shader_program, "u_perspective");
 
     /** 4x4単精度浮動小数点数行列: VSに渡します */
     // float model_m[MAT4ARRAY_LEN];
     // float view_m[MAT4ARRAY_LEN];
     // float proj_m[MAT4ARRAY_LEN];
 
-    window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
-    if (!window)
-        exit(EXIT_FAILURE);
-
-    /** GLやGLFWなど初期化 */
-    if (!gl_glew_init(WINDOW_WIDTH, WINDOW_HEIGHT))
-        return EXIT_FAILURE;
-
-    /** シェーダープログラムコンパイルコンパイルやリンキン */
-    shader_program = shader_init();
-    if (!shader_program)
-        exit(EXIT_FAILURE);
-
-    if (!init_shader_variables(&vao, &vbo, &ebo, &texture_fd))
-        exit(EXIT_FAILURE);
-
-/*** こっからは必要なくなるものが多い */
-    float reality_check = 0;
-    float dt = 0;
-    float dx = 0.1f;
-    float dy = 0.1f;
-    float kali_mm[MAT4ARRAY_LEN] = { 0 };
-    float kali_tm[MAT4ARRAY_LEN] = { 0 };
-    float kali_rm[MAT4ARRAY_LEN] = { 0 };
+    const float oneOfour = 1.0f / 4.0f;
+    float box_rad = 0;
+    float box_dx = 0.0f;
+    float box_dy = 0.0f;
     int input = 0;
-
-    mat4array_make(kali_mm, MAT4ARRAY_IDENTITY);
-    mat4array_make_translation(kali_tm, dx, dy, 0.0f);
-    mat4array_make_rotation(kali_rm, dt);
-
-    int translate_fd = glGetUniformLocation(shader_program, "u_model");
-
-    /** プログラム・ループ */
-    while (!glfwWindowShouldClose(window)) {
+    /*
+    */
+    float model_m[MAT4ARRAY_LEN];
+    float view_m[MAT4ARRAY_LEN];
+    float proj_m[MAT4ARRAY_LEN];
+    // const float rad = WINDMILL_PI4;
+    // const float ar = WINDOW_WIDTH / WINDOW_HEIGHT;
+    mat4array_set(model_m, MAT4ARRAY_IDENTITY);
+    mat4array_set(view_m, MAT4ARRAY_IDENTITY);
+    mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
+    do { /** プログラム・ループ */
 
         glfwPollEvents();
 
         /** bg カーラをリフレーシュー */
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glUseProgram(shader_program);
-
-        /** ちょっとキーで何とか動かせれるかどうか */
-        input = get_keys();
-        if (input & KEY_LEFT) {
-            dt -= WINDMILL_PI / 16;
-            dx -= 0.001f;
-        }
-        if (input & KEY_RIGHT) {
-            dt += WINDMILL_PI / 16;
-            dx += 0.001f;
-        }
-        if (input & KEY_UP) {
-            dt = 0;
-            dy += 0.01f;
-        }
-        if (input & KEY_DOWN) {
-            dt = 0;
-            dy -= 0.01f;
-        }
-        /** 回ァーーーす　猫ナリ */
-        if (input) {
-            mat4array_make_translation(kali_tm, dx, dy, 0.0f);
-            if (dt > reality_check || dt < reality_check) {
-                mat4array_make_rotation(kali_rm, dt);
-                mat4array_multiply(kali_mm, kali_tm);
-                mat4array_multiply(kali_mm, kali_rm);
-                mat4array_make_translation(kali_tm, -dx, -dy, 0.0f);
-            }
-            mat4array_multiply(kali_mm, kali_tm);
-            dx = 0;
-            dy = 0;
-            dt = 0;
-        }
-
-        glUniformMatrix4fv(translate_fd, 1, GL_TRUE, kali_mm);
+        glClearColor(0.3f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_fd);
+
+        /** シェーダープログラムを選びます。*/
+        glUseProgram(shader_program);
+
+        // float tmv = (GLfloat)glfwGetTime() * WINDMILL_PI4;
+
+        // mat4array_rotate(model_m, 0., 0.5f, 0.0f, 0.0f);
+        // mat4array_rotate(model_m, rad, 0.0f, 0.0f, 1.0f);
+        // mat4array_translate(view_m, 0.0f, 0.0f, -0.3f);
+        // mat4array_get_perspective(proj_m, rad, ar, 0.1f, 10.0f);
+
+        /** ユーザー入力 */
+        /*
+        */
+        input = get_keys();
+        if (input & KEY_RIGHT) {
+            box_rad += WINDMILL_PI4 * oneOfour;
+            box_dx += 0.01f;
+        }
+        if (input & KEY_LEFT) {
+            box_rad -= WINDMILL_PI4 * oneOfour;
+            box_dx -= 0.01f;
+        }
+        if (input & KEY_DOWN) {
+            box_dy -= 0.01f;
+        }
+        if (input & KEY_UP) {
+            box_dy += 0.01f;
+        }
+        // if (input & KEY_SHIFT) { }
+        mat4array_translate(model_m, box_dx, box_dy, 0.0f);
+        mat4array_rotate(model_m, box_rad, 0.0f, 0.0f, 1.0f);
+        if (input) {
+            box_dx = 0.0f;
+            box_dy = 0.0f;
+            box_rad = 0.0f;
+        }
+
+        /** シェーダーに変換行列データー渡します */
+        glUniformMatrix4fv(model_fd, 1, GL_FALSE, model_m);
+        glUniformMatrix4fv(view_fd, 1, GL_FALSE, view_m);
+        glUniformMatrix4fv(pers_fd, 1, GL_FALSE, proj_m);
+
+        /** オブジェクトの頂点データーを渡します */
         glBindVertexArray(vao);
 
+        /** 実際に画面に結果を画面にGPUにお願いする */
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        /** VAOなど変えたりしないといけないときもあるからとりあえず外す*/
         glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
 
+        /** よくわからんが重要です。*/
         glfwSwapBuffers(window);
-    }
+
+    } while (!glfwWindowShouldClose(window));
 /* 多分ここらへんまで ***/
 
     /* メモリリーク出ないように・・・な！*/
