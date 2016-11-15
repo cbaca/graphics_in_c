@@ -260,17 +260,3 @@ _init_texture()
 
     return texture_fd;
 }
-
-void
-init_uniforms(unsigned int shader_fd, int *m, int *v, int *p)
-{
-    *m = glGetUniformLocation(shader_fd, "u_model");
-    if (*m < 0)
-        fprintf(stderr, "U_MODEL NOT FOUND IN VSHADER");
-    *v = glGetUniformLocation(shader_fd, "u_view");
-    if (*v < 0)
-        fprintf(stderr, "U_VIEW NOT FOUND IN VSHADER");
-    *p = glGetUniformLocation(shader_fd, "u_proj");
-    if (*p < 0)
-        fprintf(stderr, "U_PROJ NOT FOUND IN VSHADER");
-}

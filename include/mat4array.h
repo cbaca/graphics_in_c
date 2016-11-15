@@ -31,28 +31,28 @@ extern void mat4array_get_frustrum(float *restrict, float, float, float, float, 
 
 //////////////////////////////////////////////////////////////////////////
 //      LOOK AT
-// 
+//
 void mat4array_get_look_at(float *restrict, float *restrict, float *restrict, float *restrict);
 
 //////////////////////////////////////////////////////////////////////////
 //      MULTIPLY
-// 
+//
 extern void mat4array_get_product(float *restrict, const float *restrict);
 
 //////////////////////////////////////////////////////////////////////////
 //      PERSPECTIVE
-// 
+//
 extern void mat4array_get_perspective(
     float *restrict, const float, const float, const float, const float);
 
 //////////////////////////////////////////////////////////////////////////
 //      PRINT
-// 
+//
 extern void mat4array_print(const float *);
 
 //////////////////////////////////////////////////////////////////////////
 //      ROTATION
-// 
+//
 /* @params
  *  4x4 matrix (float[16])
  *  angle in radians
@@ -71,7 +71,7 @@ extern void mat4array_rotatev3(float *restrict, double, float *restrict);
 
 //////////////////////////////////////////////////////////////////////////
 //      SCALE
-// 
+//
 /* 4x4 matrix[16], x, y, z pos */
 extern void mat4array_get_scaled(float *restrict, float, float, float);
 extern void mat4array_scale(float *restrict, float, float, float);
@@ -80,12 +80,12 @@ extern void mat4array_scalev3(float *restrict, float *restrict);
 
 //////////////////////////////////////////////////////////////////////////
 //      SET
-// 
+//
 extern void mat4array_set(float *restrict, int);
 
 //////////////////////////////////////////////////////////////////////////
 //      TRANSLATE
-// 
+//
 /* @params
  *  4x4 matrix(float[16])
  *  x coordinate
@@ -108,8 +108,18 @@ extern void mat4array_translatev3(float *restrict, float *restrict);
 
 //////////////////////////////////////////////////////////////////////////
 //      TRANSPOSE
-// 
+//
 extern void mat4array_transpose(float *restrict);
-#include "../utils/geometry/header/mat4array_defs.h"
-#include "../utils/geometry/header/mat4array_euler_defs.h"
+
+//////////////////////////////////////////////////////////////////////////
+//      VEC3ARRAY
+//
+extern float dot_productv3(const float *, const float *);
+extern float lengthv3(const float *);
+extern void normalizev3(float *);
+extern void crossv3fst(float *restrict
+    , const float *restrict, const float *restrict);
+extern void crossv3(float *, const float *, const float *);
+#include "../util/mat4/mat4array_defs.h"
+#include "../util/mat4/mat4array_euler_defs.h"
 #endif
