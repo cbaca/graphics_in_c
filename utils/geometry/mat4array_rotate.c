@@ -92,20 +92,20 @@ mat4array_rotate(float *restrict out, double rad, float x, float y, float z)
     /* multiply by original */
     ret = vecMat4_row_get(out);
     mat = vecMat4_row_get(cop);
-    ret.a[0] = mat.a[0] * rot[0] + mat.b[0] * rot[1] + mat.c[0] * rot[ 2];
-    ret.a[1] = mat.a[1] * rot[0] + mat.b[1] * rot[1] + mat.c[1] * rot[ 2];
-    ret.a[2] = mat.a[2] * rot[0] + mat.b[2] * rot[1] + mat.c[2] * rot[ 2];
-    ret.a[3] = mat.a[3] * rot[0] + mat.b[3] * rot[1] + mat.c[3] * rot[ 2];
+    ret.x[0] = mat.x[0] * rot[0] + mat.y[0] * rot[1] + mat.z[0] * rot[ 2];
+    ret.x[1] = mat.x[1] * rot[0] + mat.y[1] * rot[1] + mat.z[1] * rot[ 2];
+    ret.x[2] = mat.x[2] * rot[0] + mat.y[2] * rot[1] + mat.z[2] * rot[ 2];
+    ret.x[3] = mat.x[3] * rot[0] + mat.y[3] * rot[1] + mat.z[3] * rot[ 2];
 
-    ret.b[0] = mat.a[0] * rot[4] + mat.b[0] * rot[5] + mat.c[0] * rot[ 6];
-    ret.b[1] = mat.a[1] * rot[4] + mat.b[1] * rot[5] + mat.c[1] * rot[ 6];
-    ret.b[2] = mat.a[2] * rot[4] + mat.b[2] * rot[5] + mat.c[2] * rot[ 6];
-    ret.b[3] = mat.a[3] * rot[4] + mat.b[3] * rot[5] + mat.c[3] * rot[ 6];
+    ret.y[0] = mat.x[0] * rot[4] + mat.y[0] * rot[5] + mat.z[0] * rot[ 6];
+    ret.y[1] = mat.x[1] * rot[4] + mat.y[1] * rot[5] + mat.z[1] * rot[ 6];
+    ret.y[2] = mat.x[2] * rot[4] + mat.y[2] * rot[5] + mat.z[2] * rot[ 6];
+    ret.y[3] = mat.x[3] * rot[4] + mat.y[3] * rot[5] + mat.z[3] * rot[ 6];
 
-    ret.c[0] = mat.a[0] * rot[8] + mat.b[0] * rot[9] + mat.c[0] * rot[10];
-    ret.c[1] = mat.a[1] * rot[8] + mat.b[1] * rot[9] + mat.c[1] * rot[10];
-    ret.c[2] = mat.a[2] * rot[8] + mat.b[2] * rot[9] + mat.c[2] * rot[10];
-    ret.c[3] = mat.a[3] * rot[8] + mat.b[3] * rot[9] + mat.c[3] * rot[10];
+    ret.z[0] = mat.x[0] * rot[8] + mat.y[0] * rot[9] + mat.z[0] * rot[10];
+    ret.z[1] = mat.x[1] * rot[8] + mat.y[1] * rot[9] + mat.z[1] * rot[10];
+    ret.z[2] = mat.x[2] * rot[8] + mat.y[2] * rot[9] + mat.z[2] * rot[10];
+    ret.z[3] = mat.x[3] * rot[8] + mat.y[3] * rot[9] + mat.z[3] * rot[10];
 }
 
 void
@@ -127,10 +127,12 @@ mat4array_rotatev3(float *restrict out, double rad, float *restrict in)
     cop[ 8] = out[ 8]; cop[ 9] = out[ 9]; cop[10] = out[10]; cop[11] = out[11];
     cop[12] = out[12]; cop[13] = out[13]; cop[14] = out[14]; cop[15] = out[15];
 
-    /* normalize http://www.fundza.com/vectors/normalize/ */
+
+ /* 座標使用 */
 #   define x 0
 #   define y 1
 #   define z 2
+    /* normalize http://www.fundza.com/vectors/normalize/ */
     float len = (float)sqrt((in[x] * in[x]) + (in[y] * in[y]) + (in[z] * in[z]));
     float norm[3] = { in[x] / len, in[y] / len, in[z] / len };
     float frac[3] = { (1.0f - c) * norm[x], (1.0f - c) * norm[y], (1.0f - c) * norm[z] };
@@ -152,20 +154,20 @@ mat4array_rotatev3(float *restrict out, double rad, float *restrict in)
 #   undef z
 
     /* multiply by original */
-    ot.a[0] = cp.a[0] * rot[0] + cp.b[0] * rot[1] + cp.c[0] * rot[ 2];
-    ot.a[1] = cp.a[1] * rot[0] + cp.b[1] * rot[1] + cp.c[1] * rot[ 2];
-    ot.a[2] = cp.a[2] * rot[0] + cp.b[2] * rot[1] + cp.c[2] * rot[ 2];
-    ot.a[3] = cp.a[3] * rot[0] + cp.b[3] * rot[1] + cp.c[3] * rot[ 2];
+    ot.x[0] = cp.x[0] * rot[0] + cp.y[0] * rot[1] + cp.z[0] * rot[ 2];
+    ot.x[1] = cp.x[1] * rot[0] + cp.y[1] * rot[1] + cp.z[1] * rot[ 2];
+    ot.x[2] = cp.x[2] * rot[0] + cp.y[2] * rot[1] + cp.z[2] * rot[ 2];
+    ot.x[3] = cp.x[3] * rot[0] + cp.y[3] * rot[1] + cp.z[3] * rot[ 2];
 
-    ot.b[0] = cp.a[0] * rot[4] + cp.b[0] * rot[5] + cp.c[0] * rot[ 6];
-    ot.b[1] = cp.a[1] * rot[4] + cp.b[1] * rot[5] + cp.c[1] * rot[ 6];
-    ot.b[2] = cp.a[2] * rot[4] + cp.b[2] * rot[5] + cp.c[2] * rot[ 6];
-    ot.b[3] = cp.a[3] * rot[4] + cp.b[3] * rot[5] + cp.c[3] * rot[ 6];
+    ot.y[0] = cp.x[0] * rot[4] + cp.y[0] * rot[5] + cp.z[0] * rot[ 6];
+    ot.y[1] = cp.x[1] * rot[4] + cp.y[1] * rot[5] + cp.z[1] * rot[ 6];
+    ot.y[2] = cp.x[2] * rot[4] + cp.y[2] * rot[5] + cp.z[2] * rot[ 6];
+    ot.y[3] = cp.x[3] * rot[4] + cp.y[3] * rot[5] + cp.z[3] * rot[ 6];
 
-    ot.c[0] = cp.a[0] * rot[8] + cp.b[0] * rot[9] + cp.c[0] * rot[10];
-    ot.c[1] = cp.a[1] * rot[8] + cp.b[1] * rot[9] + cp.c[1] * rot[10];
-    ot.c[2] = cp.a[2] * rot[8] + cp.b[2] * rot[9] + cp.c[2] * rot[10];
-    ot.c[3] = cp.a[3] * rot[8] + cp.b[3] * rot[9] + cp.c[3] * rot[10];
+    ot.z[0] = cp.x[0] * rot[8] + cp.y[0] * rot[9] + cp.z[0] * rot[10];
+    ot.z[1] = cp.x[1] * rot[8] + cp.y[1] * rot[9] + cp.z[1] * rot[10];
+    ot.z[2] = cp.x[2] * rot[8] + cp.y[2] * rot[9] + cp.z[2] * rot[10];
+    ot.z[3] = cp.x[3] * rot[8] + cp.y[3] * rot[9] + cp.z[3] * rot[10];
 }
 
 

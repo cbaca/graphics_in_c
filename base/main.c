@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #ifndef GLEW_STATIC
 #define GLEW_STATIC
@@ -54,98 +55,91 @@ main(int argc, char **argv)
 
     /** 変数宣言 */
     GLFWwindow *window = NULL;
-    GLuint vbo = 0
-         , vao = 0
-         // , ebo = 0
-         , texture_fd = 0
-         , shader_program = 0
-         ;
+    float model_m[MAT4ARRAY_LEN];
+    float view_m[MAT4ARRAY_LEN];
+    float proj_m[MAT4ARRAY_LEN];
 
-    /** 頂点シェーダーと連絡するためのファイル記述子 */
-    int model_fd = 0 /** "u_model"      */
-      , view_fd = 0  /** "u_view"       */
-      , pers_fd = 0  /** "u_perspective */
-      ;
+    unsigned int texture_fd = 0;
+    unsigned int shader_fd = 0;
+    unsigned int vbo = 0;
+    unsigned int vao = 0;
+    // unsigned int ebo = 0;
+    int m_fd; /* for vs "u_model" */
+    int v_fd; /* for vs "u_view"  */
+    int p_fd; /* for vs "u_proj"  */
+
+    struct Camera {
+        float pos[3]; /* カメラ立場 */
+        float eye[3]; /* 目線       */
+        float nec[3]; /* 首         */
+    } cam;
+
+    mat4array_set(model_m, MAT4ARRAY_IDENTITY);
+    mat4array_set(view_m, MAT4ARRAY_IDENTITY);
+    mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
 
     window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!window)
         exit(EXIT_FAILURE);
 
-    if (!init_shaders(&shader_program, &vao, &vbo, /* &ebo, */  &texture_fd))
+    if (!init_shaders(&shader_fd, &vao, &vbo, /* &ebo, */  &texture_fd))
         exit(EXIT_FAILURE);
 
-
-
-    // init_uniforms(shader_program, &model_fd, &view_fd, &pers_fd);
-    model_fd = glGetUniformLocation(shader_program, "u_model");
-    view_fd = glGetUniformLocation(shader_program, "u_view");
-    pers_fd = glGetUniformLocation(shader_program, "u_perspective");
+    init_uniforms(shader_fd, &m_fd, &v_fd, &p_fd);
 
 /*** こっからはいろいろ変わったりするけ壊せんでな */
     /** 4x4単精度浮動小数点数行列: VSに渡します */
-    float model_m[MAT4ARRAY_LEN];
-    float view_m[MAT4ARRAY_LEN];
-    float proj_m[MAT4ARRAY_LEN];
 
-    const float oneOfour = 1.0f / 4.0f;
-    float box_rad = 0;
-    float box_dx = 0.0f;
-    float box_dy = 0.0f;
-    int input = 0;
-    mat4array_set(model_m, MAT4ARRAY_IDENTITY);
-    mat4array_set(view_m, MAT4ARRAY_IDENTITY);
-    mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
-    // float tmv = (GLfloat)glfwGetTime() * WINDMILL_PI4;
-    // const float rad = WINDMILL_PI4;
-    // const float ar = WINDOW_WIDTH / WINDOW_HEIGHT;
-    // mat4array_get_perspective(proj_m, rad, ar, 0.1f, 100.0f);
+
+#   define x 0
+#   define y 1
+#   define z 2
     do { /** プログラム・ループ */
-
         glfwPollEvents();
-
         /** bg カーラをリフレーシュー */
         glClearColor(0.3f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+        mat4array_set(model_m, MAT4ARRAY_IDENTITY);
+        mat4array_set(view_m, MAT4ARRAY_IDENTITY);
+        mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
+        /*
+        int input = get_keys();
+        if (input & KEY_SHIFT) { }
+        if (input & KEY_RIGHT) { }
+        if (input & KEY_LEFT) { }
+        if (input & KEY_DOWN) { }
+        if (input & KEY_UP) { }
+        if (input) { }
+        */
+
+        /* 世界座標 */
+        const float aspect = 4.0f / 3.0f;
+        mat4array_get_perspective(proj_m, WINDMILL_PI4, aspect, 0.1f, 100.0f);
+        /* カメラ */
+        const float sx = (float)sin(glfwGetTime() * 10.0f);
+        const float sy = 0.0f;
+        const float sz = (float)cos(glfwGetTime() * 10.0f);
+        cam.pos[x] = sx; cam.eye[x] = 0.0f; cam.nec[x] = 0.0f;
+        cam.pos[y] = sy; cam.eye[y] = 0.0f; cam.nec[y] = 1.0f;
+        cam.pos[z] = sz; cam.eye[z] = 0.0f; cam.nec[z] = 0.0f;
+        mat4array_get_look_at(view_m, cam.pos, cam.eye, cam.nec);
+
+        /* 回転箱 */
+        const float time_scl = (float)(glfwGetTime() * WINDMILL_PI4);
+        mat4array_scale(model_m, -0.3f, -0.3f, -0.3f);
+        mat4array_rotate(model_m, time_scl, 1.0f, 1.0f, 0.0f);
+        mat4array_translate(model_m, 0.3f, 0.3f, 0.0f);
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_fd);
+        glUseProgram(shader_fd);
 
-        /** シェーダープログラムを選びます。*/
-        glUseProgram(shader_program);
-
-        /** ユーザー入力 */
-        /*
-        */
-        input = get_keys();
-        if (input & KEY_RIGHT) {
-            box_rad += WINDMILL_PI4 * oneOfour;
-            box_dx += 0.01f;
-        }
-        if (input & KEY_LEFT) {
-            box_rad -= WINDMILL_PI4 * oneOfour;
-            box_dx -= 0.01f;
-        }
-        if (input & KEY_DOWN) {
-            box_dy -= 0.01f;
-        }
-        if (input & KEY_UP) {
-            box_dy += 0.01f;
-        }
-        // if (input & KEY_SHIFT) { }
-        mat4array_translate(view_m, 0.0f, 0.0f, -0.3f);
-        // mat4array_translate(model_m, box_dx, box_dy, 0.0f);
-        mat4array_rotate(model_m, box_rad, 0.0f, 0.0f, 1.0f);
-        if (input) {
-            mat4array_get_product(model_m, view_m);
-            box_dx = 0.0f;
-            box_dy = 0.0f;
-            box_rad = 0.0f;
-        }
-        // mat4array_get_product(view_m, proj_m);
         /** シェーダーに変換行列データー渡します */
-        glUniformMatrix4fv(model_fd, 1, GL_FALSE, model_m);
-        glUniformMatrix4fv(view_fd, 1, GL_FALSE, view_m);
-        glUniformMatrix4fv(pers_fd, 1, GL_FALSE, proj_m);
+        glUniformMatrix4fv(m_fd, 1, GL_FALSE, model_m);
+        glUniformMatrix4fv(v_fd, 1, GL_FALSE, view_m);
+        glUniformMatrix4fv(p_fd, 1, GL_FALSE, proj_m);
 
         /** オブジェクトの頂点データーを渡します */
         glBindVertexArray(vao);
@@ -162,6 +156,9 @@ main(int argc, char **argv)
         glfwSwapBuffers(window);
 
     } while (!glfwWindowShouldClose(window));
+#   undef x
+#   undef y
+#   undef z
 /* 多分ここらへんまで ***/
 
     /* メモリリーク出ないように・・・な！*/

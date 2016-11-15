@@ -81,7 +81,7 @@ init_shaders(
       unsigned int *shader_program
     , unsigned int *vao
     , unsigned int *vbo
-//    , unsigned int *ebo
+    // , unsigned int *ebo
     , unsigned int *tex
     )
 {
@@ -91,9 +91,9 @@ init_shaders(
 
     *vao = _init_vao();
     *vbo = _init_vbo();
-//    *ebo = _init_ebo();
+    // *ebo = _init_ebo();
 
-    const int array_stride = (int)(5 * sizeof(float));
+    const int array_stride = (int)(8 * sizeof(float));
     const int position_size = 3;
     glVertexAttribPointer(
           VS_POSITION_LOC, position_size
@@ -102,7 +102,6 @@ init_shaders(
     );
     glEnableVertexAttribArray(VS_POSITION_LOC);
 
-    /*
     const int color_size = 3;
     glVertexAttribPointer(
           VS_COLOR_LOC, color_size
@@ -110,13 +109,12 @@ init_shaders(
         , array_stride, (void *)(3 * sizeof(float))
     );
     glEnableVertexAttribArray(VS_COLOR_LOC);
-    */
 
     const int texture_size = 2;
     glVertexAttribPointer(
           VS_TEXTURE_LOC, texture_size
         , GL_FLOAT, GL_FALSE
-        , array_stride, (void *)(3 * sizeof(float))
+        , array_stride, (void *)(6 * sizeof(float))
     );
     glEnableVertexAttribArray(VS_TEXTURE_LOC);
     *tex = _init_texture();
@@ -128,7 +126,7 @@ init_shaders(
     glBindVertexArray(0);
 
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_DEPTH_TEST/* | GL_BLEND */);
+    glEnable(GL_DEPTH_TEST);
 
     // return (int)(*vao && *vbo && *ebo && *tex);
     return (int)(*vao && *vbo && *tex);
@@ -214,13 +212,13 @@ _init_vbo()
      * GL_DYNAMIC_DRAW:　実行中データはいっぱい変わっちゃう可能性が高い
      * GL_STREAM_DRAW: 絶対に毎回データ変わっちゃう
      */
- // glBufferData(GL_ARRAY_BUFFER, sizeof VERTICES4, VERTICES4, GL_STATIC_DRAW);
     glBufferData(
     GL_ARRAY_BUFFER, sizeof VERTICES36, VERTICES36, GL_STATIC_DRAW);
     return vbo;
 }
 
 /** glエレメントバッファーオブジェクト初期化 */
+/*
 unsigned int
 _init_ebo()
 {
@@ -235,6 +233,7 @@ _init_ebo()
     );
     return ebo;
 }
+*/
 
 unsigned int
 _init_texture()
@@ -263,9 +262,15 @@ _init_texture()
 }
 
 void
-init_uniforms(unsigned int shader_fd, int *model_fd, int *view_fd, int *pers_fd)
+init_uniforms(unsigned int shader_fd, int *m, int *v, int *p)
 {
-    *model_fd = glGetUniformLocation(shader_fd, "u_model");
-    *view_fd = glGetUniformLocation(shader_fd, "u_view");
-    *pers_fd = glGetUniformLocation(shader_fd, "u_perspective");
+    *m = glGetUniformLocation(shader_fd, "u_model");
+    if (*m < 0)
+        fprintf(stderr, "U_MODEL NOT FOUND IN VSHADER");
+    *v = glGetUniformLocation(shader_fd, "u_view");
+    if (*v < 0)
+        fprintf(stderr, "U_VIEW NOT FOUND IN VSHADER");
+    *p = glGetUniformLocation(shader_fd, "u_proj");
+    if (*p < 0)
+        fprintf(stderr, "U_PROJ NOT FOUND IN VSHADER");
 }

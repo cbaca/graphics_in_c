@@ -1,5 +1,5 @@
 /** mat4array_scale.c */
-#include "header/vecMat4.h"
+#include "include/vecMat4.h"
 /*   S_x  0   0   0
  *    0  S_y  0   0
  *    0   0  S_z  0
@@ -18,7 +18,7 @@ mat4array_get_scaled(float *restrict out, float x, float y, float z)
 void
 mat4array_scale(float *restrict out, float x, float y, float z)
 {
-    vecMat_t ot = vecMat4_row_get(out);
+    vecMat4_t ot = vecMat4_row_get(out);
     /*
     float cop[16];
     out[ 0] = cop[ 0]; out[ 1] = cop[ 1]; out[ 2] = cop[ 2]; out[ 3] = cop[ 3];
@@ -41,20 +41,20 @@ mat4array_scale(float *restrict out, float x, float y, float z)
     */
     int i = 0;
     for (; i < 4; ++i) {
-        ot.a[i] *= x;
-        ot.b[i] *= y;
-        ot.c[i] *= z;
+        ot.x[i] *= x;
+        ot.y[i] *= y;
+        ot.z[i] *= z;
     }
 }
 
 void
 mat4array_scalev3(float *restrict out, float *restrict in)
 {
-    vecMat_t ot = vecMat4_row_get(out);
+    vecMat4_t ot = vecMat4_row_get(out);
     int i = 0;
     for (; i < 4; ++i) {
-        ot.a[i] *= in[0];
-        ot.b[i] *= in[1];
-        ot.c[i] *= in[2];
+        ot.x[i] *= in[0];
+        ot.y[i] *= in[1];
+        ot.z[i] *= in[2];
     }
 }

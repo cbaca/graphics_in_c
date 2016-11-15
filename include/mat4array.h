@@ -10,20 +10,49 @@
 #define WINDMILL_PI6 0.52359877559829887307710723054658381403286156656251763682f
 #define WINDMILL_TAU 6.28318530717958647692528676655900576839433879875021164194f
 
-// "../utils/geometry/mat4array_copy.c"
+//////////////////////////////////////////////////////////////////////////
+//      COPY
+//
 extern void mat4array_copy(float *restrict out, const float *restrict in);
 
-// "../utils/geometry/mat4array_multiply.c"
-extern void mat4array_get_product(float *restrict, float *restrict);
+//////////////////////////////////////////////////////////////////////////
+//      FRUSTRUM
+//
+/* @param float 4x4matrix[16]
+ * @param float left
+ * @param float right
+ * @param float top
+ * @param float bottom
+ * @param float near
+ * @param float far
+ */
+extern void mat4array_get_frustrum(float *restrict, float, float, float, float, float, float);
 
-// "../utils/geometry/mat4array_perspective.c"
+
+//////////////////////////////////////////////////////////////////////////
+//      LOOK AT
+// 
+void mat4array_get_look_at(float *restrict, float *restrict, float *restrict, float *restrict);
+
+//////////////////////////////////////////////////////////////////////////
+//      MULTIPLY
+// 
+extern void mat4array_get_product(float *restrict, const float *restrict);
+
+//////////////////////////////////////////////////////////////////////////
+//      PERSPECTIVE
+// 
 extern void mat4array_get_perspective(
     float *restrict, const float, const float, const float, const float);
 
-// "../utils/geometry/mat4array_print.c"
+//////////////////////////////////////////////////////////////////////////
+//      PRINT
+// 
 extern void mat4array_print(const float *);
 
-//ROTATION///////////////////////////////////////////////////////ROTATION
+//////////////////////////////////////////////////////////////////////////
+//      ROTATION
+// 
 /* @params
  *  4x4 matrix (float[16])
  *  angle in radians
@@ -38,18 +67,25 @@ extern void mat4array_get_rotation(float *restrict, double, int);
  *  z coordinate
  */
 extern void mat4array_rotate(float *restrict, double, float, float, float);
-extern void mat4array_rotatev(float *restrict, double, float *restrict);
+extern void mat4array_rotatev3(float *restrict, double, float *restrict);
 
-//SCALE/////////////////////////////////////////////////////////////SCALE
+//////////////////////////////////////////////////////////////////////////
+//      SCALE
+// 
+/* 4x4 matrix[16], x, y, z pos */
 extern void mat4array_get_scaled(float *restrict, float, float, float);
+extern void mat4array_scale(float *restrict, float, float, float);
+/* 4x4 matrix[16], float[3] */
+extern void mat4array_scalev3(float *restrict, float *restrict);
 
-/** ../utils/geometry/mat4array_set.c */
-/*
- */
+//////////////////////////////////////////////////////////////////////////
+//      SET
+// 
 extern void mat4array_set(float *restrict, int);
 
-//TRANSLATION/////////////////////////////////////////////////TRANSLATION
-/** ../utils/geometry/mat4array_translate.c */
+//////////////////////////////////////////////////////////////////////////
+//      TRANSLATE
+// 
 /* @params
  *  4x4 matrix(float[16])
  *  x coordinate
@@ -68,9 +104,11 @@ extern void mat4array_translate(float *restrict, float, float, float);
  *  4x4 matrix(float[16])
  *  len 3 vector
  */
-extern void mat4array_translatev(float *restrict, float *restrict);
+extern void mat4array_translatev3(float *restrict, float *restrict);
 
-// "../utils/geometry/mat4array_transpose.c"
+//////////////////////////////////////////////////////////////////////////
+//      TRANSPOSE
+// 
 extern void mat4array_transpose(float *restrict);
 #include "../utils/geometry/header/mat4array_defs.h"
 #include "../utils/geometry/header/mat4array_euler_defs.h"

@@ -1,5 +1,6 @@
 /** mat4array_perspective.c */
 #include <math.h>
+#include <assert.h>
 
 /* openglのglmと言う行列関数ようC++テンプレート・リブはこんなような宣言されている
  * 関数は存在でありました:
@@ -24,7 +25,7 @@
  *
  */
 
-void /** assuming coordinate system is right handed */
+void
 mat4array_get_perspective( /* glm/gtc/matrix_transform.inl */
       float *restrict out
     , const float field_of_view /* 大体約45度になるらしいけ π/4 ってことか */
@@ -32,35 +33,13 @@ mat4array_get_perspective( /* glm/gtc/matrix_transform.inl */
     , const float near_plane    /* 大体約1.0f                              */
     , const float far_plane)    /* 大体約100.0f                            */
 {
-    // float factor = (float)tan(field_of_view / 2);
-    float fov = field_of_view / 2;
-    float dz = far_plane - near_plane;
-    float s = (float)sin(fov);
-    float ct = (float)cos(fov) / s;
+    assert(aspect_ratio > 0.0f);
 
-    // out[ 0] = 1 / (aspect_ratio * factor);
-    out[ 0] = ct / aspect_ratio;
-    out[ 1] = 0;
-    out[ 2] = 0;
-    out[ 3] = 0;
+    float loc = (float)tan(field_of_view / 2);
 
-    out[ 4] = 0;
-    // out[ 5] = 1 / factor;
-    out[ 5] = ct;
-    out[ 6] = 0;
-    out[ 7] = 0;
-
-    out[ 8] = 0;
-    out[ 9] = 0;
-    /* might be out[10] = far_plane / (near_plane - far_plane); */
-    // out[10] = -(far_plane + near_plane) / (far_plane - near_plane);
-    out[10] = -(far_plane + near_plane) / dz;
-    out[11] = -1;
-
-    out[12] = 0;
-    out[13] = 0;
- /* might be out[14] = -(far_plane * near_plane) / (far_plane - near_plane); */
-    // out[14] = -(2 * far_plane * near_plane) / (far_plane - near_plane);
-    out[14] = -(2 * far_plane * near_plane) / dz;
-    out[15] = 0;
+    out[ 0] = 1.0f / (aspect_ratio * loc);
+    out[ 5] = 1.0f / loc;
+    out[10] = -(far_plane + near_plane) / far_plane - near_plane;
+    out[11] = -1.0f;
+    out[14] = -(2.0f * far_plane * near_plane) / far_plane - near_plane;
 }
