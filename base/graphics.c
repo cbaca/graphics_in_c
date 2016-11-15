@@ -1,8 +1,5 @@
 /** graphics.c
 */
-#include <stdio.h>
-#include <stdlib.h>
-
 const char *const *VSHADER_STRING = (const char *[]) {
     "#version 330 core\n"
 

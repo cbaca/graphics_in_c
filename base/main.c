@@ -55,7 +55,7 @@ main(int argc, char **argv)
 
     /** 変数宣言 */
     GLFWwindow *window = NULL;
-    float model_m[MAT4ARRAY_LEN];
+    float model_m[2][MAT4ARRAY_LEN];
     float view_m[MAT4ARRAY_LEN];
     float proj_m[MAT4ARRAY_LEN];
 
@@ -74,10 +74,6 @@ main(int argc, char **argv)
         float nec[3]; /* 首         */
     } cam;
 
-    mat4array_set(model_m, MAT4ARRAY_IDENTITY);
-    mat4array_set(view_m, MAT4ARRAY_IDENTITY);
-    mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
-
     window = window_init(WINDOW_WIDTH, WINDOW_HEIGHT);
     if (!window)
         exit(EXIT_FAILURE);
@@ -94,6 +90,16 @@ main(int argc, char **argv)
 #   define x 0
 #   define y 1
 #   define z 2
+    mat4array_set(model_m[0], MAT4ARRAY_IDENTITY);
+    mat4array_set(model_m[1], MAT4ARRAY_IDENTITY);
+    mat4array_set(view_m, MAT4ARRAY_IDENTITY);
+    mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
+    cam.pos[x] = 4.0; cam.eye[x] = 0.0f; cam.nec[x] = 0.0f;
+    cam.pos[y] = 0.0; cam.eye[y] = 0.0f; cam.nec[y] = 1.0f;
+    cam.pos[z] = 5.0; cam.eye[z] = 0.0f; cam.nec[z] = 0.0f;
+    double nowt = 0.0f;
+    double dt = 0.0f;
+    double last = 0.0f;
     do { /** プログラム・ループ */
         glfwPollEvents();
         /** bg カーラをリフレーシュー */
@@ -101,52 +107,77 @@ main(int argc, char **argv)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        mat4array_set(model_m, MAT4ARRAY_IDENTITY);
-        mat4array_set(view_m, MAT4ARRAY_IDENTITY);
+        mat4array_set(model_m[0], MAT4ARRAY_IDENTITY);
+        mat4array_set(model_m[1], MAT4ARRAY_IDENTITY);
         mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
-        /*
+        float dcam = 5.0f * (float)dt;
+        // float dy = 0.1f;
+        // float dz = 0.1f;
+        // float shift = 0.0f;
         int input = get_keys();
-        if (input & KEY_SHIFT) { }
-        if (input & KEY_RIGHT) { }
-        if (input & KEY_LEFT) { }
-        if (input & KEY_DOWN) { }
-        if (input & KEY_UP) { }
-        if (input) { }
-        */
+        if (input & KEY_SHIFT) {
+        }
+        if (input & KEY_UP) {
+            cam.pos[x] += dcam;
+            cam.pos[y] += dcam;
+            cam.pos[z] += dcam;
+        }
+        if (input & KEY_DOWN) {
+            cam.pos[x] -= dcam;
+            cam.pos[y] -= dcam;
+            cam.pos[z] -= dcam;
+        }
+        if (input & KEY_RIGHT) {
+            cam.pos[x] += dcam;
+            cam.pos[y] += dcam;
+            cam.pos[z] += dcam;
+        }
+        if (input & KEY_LEFT) {
+            cam.pos[x] -= dcam;
+            cam.pos[y] -= dcam;
+            cam.pos[z] -= dcam;
+            /*
+            float cross[3] = {
+                  cam.eye[y] * cam.nec[z] - cam.eye[z] * cam.nec[y]
+                , cam.eye[z] * cam.nec[x] - cam.eye[x] * cam.nec[z]
+                , cam.eye[x] * cam.nec[y] - cam.eye[y] * cam.nec[x] };
+            float rlen = 1.0f / (float)sqrt(
+                  cross[x] * cross[x]
+                + cross[y] * cross[y]
+                + cross[z] * cross[z] );
+            cam.pos[x] -= cross[x] * rlen * dcam;
+            cam.pos[y] -= cross[y] * rlen * dcam;
+            cam.pos[z] -= cross[z] * rlen * dcam;
+            */
+        }
+        /* カメラ */
+        mat4array_get_look_at(view_m, cam.pos, cam.eye, cam.nec);
 
         /* 世界座標 */
         const float aspect = 4.0f / 3.0f;
-        mat4array_get_perspective(proj_m, WINDMILL_PI4, aspect, 0.1f, 100.0f);
-        /* カメラ */
-        const float sx = (float)sin(glfwGetTime() * 10.0f);
-        const float sy = 0.0f;
-        const float sz = (float)cos(glfwGetTime() * 10.0f);
-        cam.pos[x] = sx; cam.eye[x] = 0.0f; cam.nec[x] = 0.0f;
-        cam.pos[y] = sy; cam.eye[y] = 0.0f; cam.nec[y] = 1.0f;
-        cam.pos[z] = sz; cam.eye[z] = 0.0f; cam.nec[z] = 0.0f;
-        mat4array_get_look_at(view_m, cam.pos, cam.eye, cam.nec);
+        mat4array_get_perspective(proj_m, WINDMILL_PI4, aspect, 0.1f, 1000.0f);
 
         /* 回転箱 */
-        const float time_scl = (float)(glfwGetTime() * WINDMILL_PI4);
-        mat4array_scale(model_m, -0.3f, -0.3f, -0.3f);
-        mat4array_rotate(model_m, time_scl, 1.0f, 1.0f, 0.0f);
-        mat4array_translate(model_m, 0.3f, 0.3f, 0.0f);
+        const float time_scl = (float)(glfwGetTime() * WINDMILL_PI4 / 4);
+        mat4array_rotate(model_m[0], time_scl, 1.0f, 1.0f, 0.0f);
+        mat4array_translate(model_m[0], 0.0f, 0.0f, 0.0f);
+        mat4array_rotate(model_m[1], time_scl, 1.0f, 1.0f, 0.0f);
+        mat4array_translate(model_m[1], 2.3f, 1.3f, 0.0f);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_fd);
         glUseProgram(shader_fd);
 
         /** シェーダーに変換行列データー渡します */
-        glUniformMatrix4fv(m_fd, 1, GL_FALSE, model_m);
+        glBindVertexArray(vao);
         glUniformMatrix4fv(v_fd, 1, GL_FALSE, view_m);
         glUniformMatrix4fv(p_fd, 1, GL_FALSE, proj_m);
 
-        /** オブジェクトの頂点データーを渡します */
-        glBindVertexArray(vao);
-
-        /** 実際に画面に結果を画面にGPUにお願いする */
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glUniformMatrix4fv(m_fd, 1, GL_FALSE, model_m[0]);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        glUniformMatrix4fv(m_fd, 1, GL_FALSE, model_m[1]);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
         /** VAOなど変えたりしないといけないときもあるからとりあえず外す*/
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -154,6 +185,9 @@ main(int argc, char **argv)
 
         /** よくわからんが重要です。*/
         glfwSwapBuffers(window);
+        last = nowt;
+        nowt = glfwGetTime();
+        dt = nowt - last;
 
     } while (!glfwWindowShouldClose(window));
 #   undef x
