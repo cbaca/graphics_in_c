@@ -16,7 +16,7 @@ BASE_DIR = base
 #BASE_DIR = test
 
 OBJ = obj/main.o obj/window.o obj/input.o
-OBJ += obj/player.o
+OBJ += obj/player.o obj/cubes.o
 OBJ += obj/vecMat4.o obj/mat4array_copy.o obj/mat4array_frustrum.o
 OBJ += obj/mat4array_multiply.o obj/mat4array_perspective.o obj/mat4array_print.o
 OBJ += obj/mat4array_rotate.o obj/mat4array_scale.o obj/mat4array_set.o
@@ -32,6 +32,9 @@ obj/main.o:$(BASE_DIR)/main.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
 obj/window.o:$(BASE_DIR)/window.c
+	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
+
+obj/cubes.o:$(BASE_DIR)/cubes.c
 	$(CC) $(FLAGS) $(WARNINGS) -c $< -o $@
 
 obj/player.o:$(BASE_DIR)/player.c

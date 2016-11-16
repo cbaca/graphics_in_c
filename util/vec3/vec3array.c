@@ -1,15 +1,50 @@
 /* vec3array.c */
+#include <math.h>
+#include <assert.h>
+#include "type_vec3f.h"
 
 float
-dot_productv3(const float *a, const float *b)
+dot_productv3f(const vec3f_t a, const vec3f_t b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+float
+lengthv3f(const vec3f_t a)
 {
+    return (float)sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+}
+
+vec3f_t
+normalizev3f(vec3f_t in)
+{
+    float rlen =
+    1.0f / (float)sqrt(in.x * in.x + in.y * in.y + in.z * in.z);
+    in.x *= rlen;
+    in.y *= rlen;
+    in.z *= rlen;
+    return in;
+}
+
+vec3f_t
+crossv3f(const vec3f_t a, const vec3f_t b)
+{
+    vec3f_t out = {
+           .x = a.y * b.z - a.z * b.y
+        ,  .y = a.z * b.x - a.x * b.z
+        ,  .z = a.x * b.y - a.y * b.x };
+    return out;
+}
+
+
 #   define x 0
 #   define y 1
 #   define z 2
+float
+dot_productv3(const float *a, const float *b)
+{
     return a[x] * b[x] + a[y] * b[y] + a[z] * b[z];
 }
 
-#include <math.h>
 float
 lengthv3(const float *a)
 {

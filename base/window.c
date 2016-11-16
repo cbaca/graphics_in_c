@@ -14,6 +14,7 @@
 
 /** 関数プロトタイプ宣言 */
 extern void _key_callback(GLFWwindow *, int, int, int, int); /* input.c */
+// extern void _mouse_callback(GLFWwindow*, double, double);
 
 /** @引数w ウィンドの横サイズのピクセル量
  *  @引数h ウィンドの縦サイズのピクセル量
@@ -44,6 +45,8 @@ window_init(int w, int h)
 
     /** キー押されたばい_key_callback関数は呼ばれます */
     glfwSetKeyCallback(window, _key_callback);
+    // glfwSetCursorPosCallback(window, _mouse_callback);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!_gl_glew_init(w, h))
         return NULL;

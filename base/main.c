@@ -32,15 +32,21 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
+/** objects.cのキューブス */
+extern void cubes_init(float *);
+extern void animate_cubes(float *);
+extern void draw_cubes(int, float *, int);
+
+extern void get_projection(float *);
+
 /** player.c */
-extern void player_init(float *restrict);
+extern void player_init(float *restrict, float *restrict);
 extern void player_update(float *restrict, double, double);
-extern void player_move(float *restrict, int, float);
+extern void player_move(float *restrict, int, float, double *, double *);
 extern void player_get_view(float *restrict, float *restrict);
 
 /** window.cで現実にされている関数プロトタイプ宣言 */
 extern void *window_init(int, int);
-extern void debug_print_keys();
 extern int init_shaders(
       unsigned int *
     , unsigned int *
@@ -92,47 +98,45 @@ main(int argc, char **argv)
 #   define TIME_LAST 1
 #   define TIME_NOW 2
     /* runtime vars */
-    float model_m[2][MAT4ARRAY_LEN];
-    float view_m[MAT4ARRAY_LEN];
-    float proj_m[MAT4ARRAY_LEN];
-    // player camera data [ pos ][front][right][  up ][world]
-    //                    0      3      6      9      12
-    float player[12]; /* 48 byte */
-    // double yaw = -WINDMILL_PI2;
-    // double pitch = 0.0f;
 
-    player_init(player);
+    // float windmill[MAT4ARRAY_LEN * 5]; /* 320 byte */
+    //float cubes[MAT4ARRAY_LEN * 2]; /* 128  bytes */
+    //windmill_init(windmill);
 
-    mat4array_set(model_m[0], MAT4ARRAY_IDENTITY);
-    mat4array_set(model_m[1], MAT4ARRAY_IDENTITY);
-    mat4array_set(view_m, MAT4ARRAY_IDENTITY);
+    const int num_cubes = 5;
+    float cubes[MAT4ARRAY_LEN * num_cubes]; /* 64 byte */
+    cubes_init(cubes);
+
+    float view_m[MAT4ARRAY_LEN]; /* 64 byte */
+    float player[16]; /* 64 byte */
+    player_init(view_m, player);
+
+    float proj_m[MAT4ARRAY_LEN]; /* 64 byte */
     mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
+
+    double yaw = -WINDMILL_PI2;
+    double pitch = 0.0;
+
     double times[3];
+
     do { /** プログラム・ループ */
         glfwPollEvents();
         /** bg カーラをリフレーシュー */
-        glClearColor(0.3f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.8f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        mat4array_set(model_m[0], MAT4ARRAY_IDENTITY);
-        mat4array_set(model_m[1], MAT4ARRAY_IDENTITY);
         mat4array_set(proj_m, MAT4ARRAY_IDENTITY);
 
         /* カメラ */
-        const float vel = 0.5f * (float)times[TIME_DELTA];
-        player_move(player, get_keys(), vel);
+        const float vel = 5.0f * (float)times[TIME_DELTA];
+        player_move(player, get_keys(), vel, &yaw, &pitch);
         player_get_view(view_m, player);
 
         /* 世界座標 */
-        const float aspect = 4.0f / 3.0f;
-        mat4array_get_perspective(proj_m, WINDMILL_PI4, aspect, 0.1f, 1000.0f);
+        get_projection(proj_m);
 
-        /* 回転箱 */
-        const float time_scl = (float)(glfwGetTime() * WINDMILL_PI4 / 4);
-        mat4array_rotate(model_m[0], time_scl, 1.0f, 1.0f, 0.0f);
-        mat4array_translate(model_m[0], 0.0f, 0.0f, 0.0f);
-        mat4array_rotate(model_m[1], time_scl, 1.0f, 1.0f, 0.0f);
-        mat4array_translate(model_m[1], 2.3f, 1.3f, 0.0f);
+        /* 回転箱たち */
+        // animate_cubes(cubes);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_fd);
@@ -143,10 +147,7 @@ main(int argc, char **argv)
         glUniformMatrix4fv(view_fd, 1, GL_FALSE, view_m);
         glUniformMatrix4fv(proj_fd, 1, GL_FALSE, proj_m);
 
-        glUniformMatrix4fv(model_fd, 1, GL_FALSE, model_m[0]);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glUniformMatrix4fv(model_fd, 1, GL_FALSE, model_m[1]);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        draw_cubes(model_fd, cubes, num_cubes);
 
 
         /** VAOなど変えたりしないといけないときもあるからとりあえず外す*/

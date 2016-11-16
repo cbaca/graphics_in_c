@@ -13,23 +13,23 @@
 #include "../include/mat4array.h"
 
 /*  player's data array should look like this
- *  [ pos ][front][right][  up ][world]
- *  0      3      6      9      12
+ *  [pos][frt][rgt][up ][wrd][Θ][...
+ *  0    3    6    9    12   15 16
  */
 
 #   define x 0
 #   define y 1
 #   define z 2
 void
-player_init(float *restrict vec)
+player_init(float *restrict view, float *restrict vec)
 {
     vec[x] =  0.0f; // pos
     vec[y] =  0.0f;
-    vec[z] =  0.0f;
+    vec[z] =  10.0f;
     vec += 3;       // front
-    vec[x] = (float)(cos(-WINDMILL_PI2) * cos(0));
-    vec[y] = (float)sin(0);
-    vec[z] = (float)(sin(-WINDMILL_PI2) * cos(0));
+    vec[x] = (float)(cos(-90.0f / 180.0f * WINDMILL_PI) * cos(0.0f));
+    vec[y] = (float)sin(0.0f);
+    vec[z] = (float)(sin(-90.0f / 180.0f * WINDMILL_PI) * cos(0.0f));
     normalizev3(vec);
     vec += 3;       // right
     vec[x] =  0.0f;
@@ -53,19 +53,16 @@ player_init(float *restrict vec)
     // normalizev3(up);
     vec += 6;
     normalizev3(vec);
+    mat4array_set(view, MAT4ARRAY_IDENTITY);
 }
 
 void    /* played_data */
 player_update(float *restrict vec, double yaw, double pitch)
 {
-    vec += 3;
 /*
  *  [posit][front][right][ up  ][world]
  *  -3     0      3      6      9
  */
-    // front[x] = (float)(cos(yaw) * cos(pitch));
-    // front[y] = (float)sin(pitch);
-    // front[z] = (float)sin(yaw) * cos(pitch);
     vec[x] = (float)(cos(yaw) * cos(pitch));
     vec[y] = (float)sin(pitch);
     vec[z] = (float)(sin(yaw) * cos(pitch));
@@ -81,33 +78,47 @@ player_update(float *restrict vec, double yaw, double pitch)
 }
 
 void
-player_move(float *vec, int input, float vel)
+player_move(float *vec, int input, float vel, double *yaw, double *pitch)
 {
 /*
  *  [ pos ][front][right][ up  ][world]
  *  0      3      6      9      12
  */
-    if (input & KEY_SHIFT) {
-    }
-    if (input & KEY_UP) {
-        vec[x] += vec[3] * vel;
-        vec[y] += vec[4] * vel;
-        vec[z] += vec[5] * vel;
-    }
-    if (input & KEY_DOWN) {
-        vec[x] -= vec[3] * vel;
-        vec[y] -= vec[4] * vel;
-        vec[z] -= vec[5] * vel;
-    }
-    if (input & KEY_RIGHT) {
+    if (input & KEY_L)
+        *yaw += WINDMILL_PI6 / 45; // 左に向かう
+    if (input & KEY_H)
+        *yaw -= WINDMILL_PI6 / 45; // 右に向かう
+    if (input & KEY_K)
+        *pitch += WINDMILL_PI6 / 45; // 上に向かう
+    if (input & KEY_J)
+        *pitch -= WINDMILL_PI6 / 45; // 下に向かう
+    if (input | 240)
+        player_update(vec + 3, *yaw, *pitch);
+    if (input & KEY_D) {            // 左移動
         vec[x] += vec[6] * vel;
         vec[y] += vec[7] * vel;
         vec[z] += vec[8] * vel;
     }
-    if (input & KEY_LEFT) {
+    if (input & KEY_A) {            //右移動
         vec[x] -= vec[6] * vel;
         vec[y] -= vec[7] * vel;
         vec[z] -= vec[8] * vel;
+    }
+    if (input & KEY_W) {            // まっすぐに移動
+        vec[x] += vec[3] * vel;
+        vec[y] += vec[4] * vel;
+        vec[z] += vec[5] * vel;
+    }
+    if (input & KEY_S) {            // 後ろに移動 
+        vec[x] -= vec[3] * vel;
+        vec[y] -= vec[4] * vel;
+        vec[z] -= vec[5] * vel;
+    }
+    if (input & KEY_SHIFT) {
+        if (input & KEY_W) { // fly
+        }
+        if (input & KEY_S) { // sink
+        }
     }
 }
 
@@ -124,36 +135,3 @@ player_get_view(float *restrict view, float *restrict vec)
 #   undef x
 #   undef y
 #   undef z
-/*
-        int input = get_keys();
-        if (input & KEY_SHIFT) {
-        }
-        if (input & KEY_UP) {
-            cam.pos[x] += dcam;
-            cam.pos[y] += dcam;
-            cam.pos[z] += dcam;
-        }
-        if (input & KEY_DOWN) {
-            cam.pos[x] -= dcam;
-            cam.pos[y] -= dcam;
-            cam.pos[z] -= dcam;
-        }
-        if (input & KEY_RIGHT) {
-            cam.pos[x] += dcam;
-            cam.pos[y] += dcam;
-            cam.pos[z] += dcam;
-        }
-        if (input & KEY_LEFT) {
-            float cross[3] = {
-                  cam.eye[y] * cam.nec[z] - cam.eye[z] * cam.nec[y]
-                , cam.eye[z] * cam.nec[x] - cam.eye[x] * cam.nec[z]
-                , cam.eye[x] * cam.nec[y] - cam.eye[y] * cam.nec[x] };
-            float rlen = 1.0f / (float)sqrt(
-                  cross[x] * cross[x]
-                + cross[y] * cross[y]
-                + cross[z] * cross[z] );
-            cam.pos[x] -= cross[x] * rlen * dcam;
-            cam.pos[y] -= cross[y] * rlen * dcam;
-            cam.pos[z] -= cross[z] * rlen * dcam;
-        }
-*/

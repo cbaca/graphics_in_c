@@ -6,15 +6,29 @@
 
 /** キーボード入力格納 */
 static int _pressed_keys = 0;
-/* extern */ void _key_callback(
-      GLFWwindow *
-    , int
- /** 標準出力もコンパイラもどっちも黙ってくれないかな */
-    , __attribute__ ((unused)) int
-    , int
-    , __attribute__ ((unused)) int
-    );
-/* extern */ int get_keys();
+// static double _mousex = 0;
+// static double _mousey = 0;
+
+// void _scoll_collback(GLFWwindow *win, double xoff, double yoff) { }
+// void
+// _mouse_callback(__attribute__ ((unused)) GLFWwindow *win, double x, double y)
+// {
+//     static int _begin = 0;
+//     static double lastX = 0.0;
+//     static double lastY = 0.0;
+//     if (!_begin)
+//         _begin = 1;
+//     _mousex = x - lastX;
+//     _mousey = lastY - y;
+//     lastX = x;
+//     lastY = y;
+// }
+
+int
+get_keys()
+{
+    return _pressed_keys;
+}
 
 void
 _key_callback(
@@ -47,45 +61,42 @@ _key_callback(
             case GLFW_KEY_W:
                 _pressed_keys |= KEY_W;
                 break;
-            case GLFW_KEY_Y:
-                _pressed_keys |= KEY_Y;
+
+            case GLFW_KEY_A:
+                _pressed_keys |= KEY_A;
                 break;
 
-            // ** 2次元では右へ向かう
-            case GLFW_KEY_RIGHT:
-                _pressed_keys |= KEY_RIGHT;
-                break;
-            case GLFW_KEY_L:
-                _pressed_keys |= KEY_RIGHT;
+            case GLFW_KEY_S:
+                _pressed_keys |= KEY_S;
                 break;
 
-            // ** 2次元では左へ向かう
-            case GLFW_KEY_LEFT:
-                _pressed_keys |= KEY_LEFT;
-                break;
-            case GLFW_KEY_H:
-                _pressed_keys |= KEY_LEFT;
+            case GLFW_KEY_D:
+                _pressed_keys |= KEY_D;
                 break;
 
-            // ** 2次元では下へ向かう
-            case GLFW_KEY_DOWN:
-                _pressed_keys |= KEY_DOWN;
-                break;
-            case GLFW_KEY_J:
-                _pressed_keys |= KEY_DOWN;
-                break;
-
-            // ** 2次元では上へ向かう
-            case GLFW_KEY_UP:
-                _pressed_keys |= KEY_UP;
-                break;
             case GLFW_KEY_K:
-                _pressed_keys |= KEY_UP;
+                _pressed_keys |= KEY_K;
                 break;
+
+            case GLFW_KEY_J:
+                _pressed_keys |= KEY_J;
+                break;
+
+            case GLFW_KEY_H:
+                _pressed_keys |= KEY_H;
+                break;
+
+            case GLFW_KEY_L:
+                _pressed_keys |= KEY_L;
+                break;
+
+            case GLFW_KEY_SPACE:
+                _pressed_keys |= KEY_SPACE;
 
             case GLFW_KEY_LEFT_SHIFT:
                 _pressed_keys |= KEY_SHIFT;
                 break;
+
             case GLFW_KEY_RIGHT_SHIFT:
                 _pressed_keys |= KEY_SHIFT;
                 break;
@@ -98,36 +109,37 @@ _key_callback(
             case GLFW_KEY_W:
                 _pressed_keys &= ~KEY_W;
                 break;
-            case GLFW_KEY_Y:
-                _pressed_keys &= ~KEY_Y;
+
+            case GLFW_KEY_A:
+                _pressed_keys &= ~KEY_A;
                 break;
 
-            case GLFW_KEY_RIGHT:
-                _pressed_keys &= ~KEY_RIGHT;
-                break;
-            case GLFW_KEY_L:
-                _pressed_keys &= ~KEY_RIGHT;
+            case GLFW_KEY_S:
+                _pressed_keys &= ~KEY_S;
                 break;
 
-            case GLFW_KEY_LEFT:
-                _pressed_keys &= ~KEY_LEFT;
-                break;
-            case GLFW_KEY_H:
-                _pressed_keys &= ~KEY_LEFT;
+            case GLFW_KEY_D:
+                _pressed_keys &= ~KEY_D;
                 break;
 
-            case GLFW_KEY_DOWN:
-                _pressed_keys &= ~KEY_DOWN;
-                break;
-            case GLFW_KEY_J:
-                _pressed_keys &= ~KEY_DOWN;
-                break;
-
-            case GLFW_KEY_UP:
-                _pressed_keys &= ~KEY_UP;
-                break;
             case GLFW_KEY_K:
-                _pressed_keys &= ~KEY_UP;
+                _pressed_keys &= ~KEY_K;
+                break;
+
+            case GLFW_KEY_J:
+                _pressed_keys &= ~KEY_J;
+                break;
+
+            case GLFW_KEY_H:
+                _pressed_keys &= ~KEY_H;
+                break;
+
+            case GLFW_KEY_L:
+                _pressed_keys &= ~KEY_L;
+                break;
+
+            case GLFW_KEY_SPACE:
+                _pressed_keys &= ~KEY_SPACE;
                 break;
 
             case GLFW_KEY_LEFT_SHIFT:
@@ -136,43 +148,9 @@ _key_callback(
             case GLFW_KEY_RIGHT_SHIFT:
                 _pressed_keys &= ~KEY_SHIFT;
                 break;
+
             default:
                 break;
         }
-    }
-}
-
-int
-get_keys()
-{
-    return _pressed_keys;
-}
-
-void
-debug_print_keys()
-{
-    if (_pressed_keys & KEY_SHIFT) {
-        printf("SHIFT ");
-        if (_pressed_keys & KEY_RIGHT)
-            printf("RIGHT!\n");
-        if (_pressed_keys & KEY_LEFT)
-            printf("LEFT!\n");
-        if (_pressed_keys & KEY_DOWN)
-            printf("DOWN!\n");
-        if (_pressed_keys & KEY_UP)
-            printf("UP!\n");
-    } else {
-        if (_pressed_keys & KEY_W)
-            printf("ほら！回ってるすげぇ！!\n");
-        if (_pressed_keys & KEY_Y)
-            printf("あれ・・建物自体動いてんじゃない？\n");
-        if (_pressed_keys & KEY_RIGHT)
-            printf("RIGHT!\n");
-        if (_pressed_keys & KEY_LEFT)
-            printf("LEFT!\n");
-        if (_pressed_keys & KEY_DOWN)
-            printf("DOWN!\n");
-        if (_pressed_keys & KEY_UP)
-            printf("UP!\n");
     }
 }

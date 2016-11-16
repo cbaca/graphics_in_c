@@ -9,6 +9,7 @@
 - [openGL/glew.h](https://www.archlinux.org/packages/extra/x86_64/glew/)
 
 ### Resources used:
+- [GCC Manual](https://gcc.gnu.org/onlinedocs/gcc-6.2.0/gcc/)
 - [Rotation matrices](https://en.wikipedia.org/wiki/Rotation_matrix)
 - [Awesome face image](http://learnopengl.com/img/textures/awesomeface.png)
 - [learnopengl.com pdf](http://learnopengl.com/book/offline%20learnopengl.pdf) by Joey de Vries.
@@ -33,28 +34,7 @@
 - GPU: AMD Redwood LE Radeon HD 5550/5570/5630/6390/6490/7570
 
 ### Next goal 3Dcube:
-- update geometry math dir with projection/view/clipping, converting
-  coordinates for objects between spaces:
-    - local space, local object coords.
-    - world space(uses MODEL matrix), coordinates of each object relative to
-      the "world". Model matrix will place an object in the world using
-      transformations: translate/scale/rotate.
-    - view space(used VIEW matrix), transforms world space to coordinates that
-      are in front of the user's view. Accomplished with a combination of
-      translations and rotations that will move the scene so that certain items
-      are transformed to the front of the camera.
-    - clipping(projection matrix), specifies a range of coords e.g. -1000 to
-      1000 in each dimansion. Then, transforms the coords within this range to
-      NDC(-1.0 to 1.0). This conversion is like creating a "viewing box", which
-      is called the "frustrum"(if you cut off the tip of a pyramid, the plane
-      that the knife was parallel to would be the frustrum). Everything in the
-      frustrum after conversion will be displayed.
-        - perspective division: division of x, y, and z components of position
-          vectors by the vector's homogeneous W component(performed
-          automagically by the end of each vshader run?, Joey de Vries, pg98).
-    - screen space: resulting coordingates are mapped to screen coords using
-      settings of glViewport, and turned into fragments.
-- consider making seperate object file for input controls/matrix operations
+- WINDMILL
 
 ### Goals:
 - use a world coordinate system that is much wider than NVC.
@@ -76,72 +56,5 @@
 
 ### Todo:
 - make a damn windmill
-- generate first 3D cube
-- perspective projection
-- viewing matrix
 - refactoring and optimization
     - try x86intrin.h for vectorization and optimization in geometry math
-
-### Need to know vocab:
-- NDC aka Normalized Device Coordinates: range of coordinate visibility,
-  minus 1.0 to plus 1.0
-- HSR aka hidden surface removal
-
-### Current direcotry tree courtesy of [tree](http://mama.indstate.edu/users/ice/tree/):
-```
-.
-├── base/
-│   ├── graphics.c
-│   ├── main.c      /* requires GL/glew.h and GLFW/glfw3.h */
-│   ├── window.c    /* requires GL/glew.h GLFW/glfw3.h SOIL.h */
-│   └── window.h
-│
-├── docs/
-│   └── windmill.png
-│
-├── include/
-│   ├── input.h
-│   └── mat4array.h
-│
-├── Makefile
-├── README.md
-├── obj/
-│
-├── textures/
-│   ├── awesomeface.png
-│   └── font.png
-│
-└── utils/
-    ├── geometry/
-    │   │
-    │   ├── header/
-    │   │   └── mat4array_defs.h
-    │   │
-    │   ├── include/
-    │   │   ├── mat4array_copy.h
-    │   │   ├── mat4array_make.h
-    │   │   ├── mat4array_multiply.h
-    │   │   ├── mat4array_print.h
-    │   │   ├── mat4array_rotate.h
-    │   │   ├── mat4array_translate.h
-    │   │   ├── mat4array_transpose.h
-    │   │   └── rowVecMat4.h
-    │   │
-    │   ├── mat4array_copy.c
-    │   ├── mat4array_make.c
-    │   ├── mat4array_multiply.c
-    │   ├── mat4array_print.c
-    │   ├── mat4array_rotate.c
-    │   ├── mat4array_translate.c
-    │   ├── mat4array_transpose.c
-    │   │
-    │   ├── rowVecMat4/
-    │   │   ├── make_rowVecMat4.c
-    │   │   └── rowVecMat4_t.h
-    │   │
-    │   ├── toriaezu_matrix.c
-    │   └── toriaezu_matrix.h
-    └── input/
-        ├── input.c           /* requires GLFW/glfw3.h */
-        └── key_macros.h
-```

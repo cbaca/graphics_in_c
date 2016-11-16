@@ -3,4 +3,5 @@
 #define WINDMILL_INPUT_H_
 #include "../util/input/key_macros.h"
 extern int get_keys();
+// extern void get_mouse(float *, float *);
 #endif

@@ -20,6 +20,10 @@
  *      |    |    |
  * ,T_x,|T_y,|T_z,| 1
  */
+#define X 0
+#define Y 1
+#define Z 2
+#define W 3
 void
 mat4array_get_translation(float *restrict out, float x, float y, float z)
 {
@@ -35,10 +39,10 @@ mat4array_translate(float *restrict out, float x, float y, float z)
 {
     vecMat4_t mat = vecMat4_row_get(out);
     /*  [12]  = [0]  * x + [4] * y + [8] * z + [12], etc ...*/
-    mat.w[0] += mat.x[0] * x + mat.y[0] * y + mat.z[0] * z;
-    mat.w[1] += mat.x[1] * x + mat.y[1] * y + mat.z[1] * z;
-    mat.w[2] += mat.x[2] * x + mat.y[2] * y + mat.z[2] * z;
-    mat.w[3] += mat.x[3] * x + mat.y[3] * y + mat.z[3] * z;
+    mat.w[X] += mat.x[X] * x + mat.y[X] * y + mat.z[X] * z;
+    mat.w[Y] += mat.x[Y] * x + mat.y[Y] * y + mat.z[Y] * z;
+    mat.w[Z] += mat.x[Z] * x + mat.y[Z] * y + mat.z[Z] * z;
+    mat.w[W] += mat.x[W] * x + mat.y[W] * y + mat.z[W] * z;
 }
 
 void                    /* float out[16],       float in[3] */
@@ -46,8 +50,12 @@ mat4array_translatev3(float *restrict out, float *restrict in)
 {
     vecMat4_t mat = vecMat4_row_get(out);
     /*  [12]  = [0]  * x + [4] * y + [8] * z + [12], etc ... */
-    mat.w[0] += mat.x[0] * in[0] + mat.y[0] * in[1] + mat.z[0] * in[3];
-    mat.w[1] += mat.x[1] * in[0] + mat.y[1] * in[1] + mat.z[1] * in[3];
-    mat.w[2] += mat.x[2] * in[0] + mat.y[2] * in[1] + mat.z[2] * in[3];
-    mat.w[3] += mat.x[3] * in[0] + mat.y[3] * in[1] + mat.z[3] * in[3];
+    mat.w[X] += mat.x[X] * in[X] + mat.y[X] * in[Y] + mat.z[X] * in[W];
+    mat.w[Y] += mat.x[Y] * in[X] + mat.y[Y] * in[Y] + mat.z[Y] * in[W];
+    mat.w[Z] += mat.x[Z] * in[X] + mat.y[Z] * in[Y] + mat.z[Z] * in[W];
+    mat.w[W] += mat.x[W] * in[X] + mat.y[W] * in[Y] + mat.z[W] * in[W];
 }
+#undef X
+#undef Y
+#undef Z
+#undef W

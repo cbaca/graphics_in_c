@@ -114,6 +114,11 @@ extern void mat4array_transpose(float *restrict);
 //////////////////////////////////////////////////////////////////////////
 //      VEC3ARRAY
 //
+#include "../util/vec3/type_vec3f.h"
+extern float dot_productv3f(const vec3f_t a, const vec3f_t b);
+extern float lengthv3f(const vec3f_t);
+extern vec3f_t normalize3f(vec3f_t);
+extern vec3f_t crossv3f(const vec3f_t, const vec3f_t);
 extern float dot_productv3(const float *, const float *);
 extern float lengthv3(const float *);
 extern void normalizev3(float *);
