@@ -55,6 +55,5 @@
 - note: don't forget to enable hidden surface removal and clear the depth buffer.
 
 ### Todo:
-- make a damn windmill
 - refactoring and optimization
     - try x86intrin.h for vectorization and optimization in geometry math
