@@ -124,6 +124,7 @@ static void _initModels(Scene *s)
 
     SceneObject *temp= newSceneObject(&s->landscapeData);
     addSceneObjectTexture(temp, 0);
+    temp->color = (Vec3){ 1.0f, 1.0f, 1.0f };
     temp->position = (Vec3) { 0.0f, 0.0f, 10.0f };
     setRotXMat4(temp->drawMatrix, 90.0f);
     translateMat4(temp->drawMatrix, &temp->position);
@@ -140,6 +141,7 @@ static void _initModels(Scene *s)
         temp = newSceneObject(&s->pyramidData);
         temp->position = (Vec3){ 10.0f, 0.0f, 10.0f };
         temp->scale = (Vec3){ 4.0f, 4.0f, 4.0f };
+        temp->color = (Vec3){ 1.0f, 1.0f, 1.0f };
         setTranslationMat4(temp->drawMatrix, &temp->position);
         scaleMat4(temp->drawMatrix, &temp->scale);
         temp->name = malloc(sizeof(char) * 100);
@@ -153,6 +155,7 @@ static void _initModels(Scene *s)
         temp = newSceneObject(&s->cubeData);
         temp->position = (Vec3){ 10.0f, DefaultYPos, 40.0f };
         temp->scale = (Vec3){ 3.0f, 3.0f, 3.0f };
+        temp->color = (Vec3){ 1.0f, 1.0f, 1.0f };
         setTranslationMat4(temp->drawMatrix, &temp->position);
         scaleMat4(temp->drawMatrix, &temp->scale);
         temp->name = malloc(sizeof(char) * 100);
@@ -166,6 +169,7 @@ static void _initModels(Scene *s)
         temp = newSceneObject(&s->texCubeData);
         temp->position = (Vec3){ 30.0f, DefaultYPos, 5.0f };
         temp->scale = (Vec3){ 6.0f, 6.0f, 6.0f };
+        temp->color = (Vec3){ 1.0f, 1.0f, 1.0f };
         setTranslationMat4(temp->drawMatrix, &temp->position);
         scaleMat4(temp->drawMatrix, &temp->scale);
         addSceneObjectTexture(temp, 1);
@@ -180,6 +184,7 @@ static void _initModels(Scene *s)
         temp = newSceneObject(&s->texCubeData);
         temp->position = (Vec3){ -30.0f, DefaultYPos, 5.0f };
         temp->scale = (Vec3){ 6.0f, 6.0f, 6.0f };
+        temp->color = (Vec3){ 1.0f, 1.0f, 1.0f };
         setTranslationMat4(temp->drawMatrix, &temp->position);
         scaleMat4(temp->drawMatrix, &temp->scale);
         addSceneObjectTexture(temp, 1);
@@ -195,7 +200,7 @@ static void _initModels(Scene *s)
         temp = newSceneObject(&s->sphereData);
         temp->position = (Vec3){ 23.0f, 0.0f, 67.0f };
         temp->scale = (Vec3){ 7.0f, 7.0f, 7.0f };
-        temp->color = (Vec3){ 1.0f, 0.0f, 0.0f };
+        temp->color = (Vec3){ 1.0f, 1.0f, 1.0f };
         setTranslationMat4(temp->drawMatrix, &temp->position);
         scaleMat4(temp->drawMatrix, &temp->scale);
         addSceneObjectTexture(temp, 2);

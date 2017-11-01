@@ -4,13 +4,13 @@
 #include <stdio.h>
 #include <string.h>
 
-void _renderMaterial(Render_t *r);
+void _renderColor(Render_t *r);
 static void _renderTexture(Render_t *r);
 void _renderHighlight(Render_t *r);
 
-static void _setMaterialShader(Scene *s, World_t *w, MaterialShader *sh);
-static void _setObjShader(Scene *s, World_t *w, ObjShader *o);
-static void _setHighlightShader(Scene *s, World_t *w, HighlightShader *h, float ww, float wh);
+static void _setColorShader(Scene *s, World_t *w, ColorShader *sh);
+static void _setTexShader(Scene *s, World_t *w, TexShader *sh);
+static void _setHighlightShader(Scene *s, World_t *w, HighlightShader *sh, float ww, float wh);
 void _renderHighlightTexture(Render_t *r);
 void _renderHighlightColor(Render_t *r);
 
@@ -18,7 +18,6 @@ void finalizeRenderer(Render_t *r)
 {
     finalizeWorld(&r->world);
     finalizeScene(&r->scene);
-    free(r->oShader);
 }
 
 int initRenderer(Render_t *r)
@@ -31,13 +30,9 @@ int initRenderer(Render_t *r)
     glStencilFunc(GL_NOTEQUAL, 1, 0xff);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-    if (!materialShaderInit(&r->mShader))
-        return 0;
-    if (!highlightShaderInit(&r->hlShader))
-        return 0;
-    r->oShader = newObjShader();
-    if (!r->oShader)
-        return 0;
+    if (!initColorShader(&r->cShader)) return 0;
+    if (!initTexShader(&r->tShader)) return 0;
+    if (!initHighlightShader(&r->hlShader)) return 0;
 
     initScene(&r->scene);
 
@@ -62,7 +57,7 @@ void render(Render_t *r)
 
     glStencilMask(0x00);
     _renderTexture(r);
-    _renderMaterial(r);
+    _renderColor(r);
 
     int rm = sceneHasHighlightObjects(&r->scene);
     if (!rm) return;
@@ -95,28 +90,51 @@ void setLightUniforms(LightUniforms *lu, DirLight *dl)
     glUniform1f(lu->diffuseIntensity, dl->diffuseIntensity);
 }
 
+void setSpotLightUniforms(SpotLightUniforms *su, SpotLight *sl)
+{
+    glUniform3fv(su->direction, 1, (float *)&sl->direction);
+    glUniform1f(su->ambientIntensity, sl->ambientIntensity);
+    glUniform1f(su->diffuseIntensity, sl->diffuseIntensity);
+    glUniform1f(su->inner_cutoff, sl->inner_cutoff);
+    glUniform1f(su->outer_cutoff, sl->outer_cutoff);
+}
+
+void setPointLightUniforms(PointLightUniforms *pu, PointLight *pl)
+{
+    glUniform3fv(pu->position, 1, (float *)&pl->position);
+    glUniform3fv(pu->ambient, 1, (float *)&pl->ambient);
+    glUniform3fv(pu->diffuse, 1, (float *)&pl->diffuse);
+    glUniform3fv(pu->specular, 1, (float *)&pl->specular);
+    glUniform1f(pu->Kc, pl->Kc);
+    glUniform1f(pu->Kl, pl->Kl);
+    glUniform1f(pu->Kq, pl->Kq);
+}
+
 
 /**
  * Scene render function definitions
  */
-void drawSceneColor(Scene *s, MaterialShader *sh, Vec3 *campos)
+void drawSceneColor(Scene *s, ColorShader *sh, Vec3 *cam_pos)
 {
-    drawColorRenderList(s->colorList, sh, campos);
+    drawColorRenderList(s->colorList, sh, cam_pos);
 }
 
-void drawSceneHighlightColor(Scene *s, MaterialShader *sh, Vec3 *campos)
+// void drawSceneTexture(Scene *s, GLint uModel, GLint uTexture)
+void drawSceneTexture(Scene *s, TexShader *sh, Vec3 *cam_pos)
 {
-    drawColorRenderList(s->highlightList, sh, campos);
+    drawTextureRenderList(s->textureList, sh, cam_pos);
 }
 
-void drawSceneTexture(Scene *s, GLint uModel, GLint uTexture)
+void drawSceneHighlightColor(Scene *s, ColorShader *sh, Vec3 *cam_pos)
 {
-    drawTextureRenderList(s->textureList, uModel, uTexture);
+    drawColorRenderList(s->highlightList, sh, cam_pos);
 }
 
-void drawSceneHighlightTexture(Scene *s, GLint uModel, GLint uTexture)
+// void drawSceneHighlightTexture(Scene *s, GLint uModel, GLint uTexture)
+void drawSceneHighlightTexture(Scene *s, TexShader *sh, Vec3 *cam_pos)
 {
-    drawTextureRenderList(s->highlightList, uModel, uTexture);
+    // drawTextureRenderList(s->highlightList, uModel, uTexture);
+    drawTextureRenderList(s->textureList, sh, cam_pos);
 }
 void drawSceneHighlight(Scene *s, GLint uModel)
 {
@@ -126,10 +144,29 @@ void drawSceneHighlight(Scene *s, GLint uModel)
 /**
  * RenderList render call defs
  */
-void _drawObjListColor(ObjNode *sn, BufferData *cur_data, MaterialShader *sh, Vec3 *campos);
-void _drawObjListTexture(ObjNode *sn, BufferData *cur_data, GLint uModel, GLint uTexture);
+void _drawObjListColor(ObjNode *sn, BufferData *cur_data, ColorShader *sh, Vec3 *cam_pos);
+void _drawObjListTexture(ObjNode *sn, BufferData *cur_data, TexShader *sh, Vec3 *cam_pos);
 void _drawObjListHighlight(ObjNode *sn, BufferData *cur_data, GLint uModel);
 void _drawObjListColorDebug(ObjNode *sn, BufferData *cur_data, GLint uModel, GLint uColor);
+
+void drawColorRenderList(RenderList *ol, ColorShader *sh, Vec3 *cam_pos)
+{
+    if (!ol->root) return;
+    ObjNode *curNode = ol->root;
+    BufferData *curData = curNode->object->bufferData;
+    bufferDataUse(curData);
+    _drawObjListColor(ol->root, curData, sh, cam_pos);
+}
+
+// void drawTextureRenderList(RenderList *ol, GLint uModel, GLint uTexture)
+void drawTextureRenderList(RenderList *ol, TexShader *sh, Vec3 *cam_pos)
+{
+    if (!ol->root) return;
+    ObjNode *curNode = ol->root;
+    BufferData *curData = curNode->object->bufferData;
+    bufferDataUse(curData);
+    _drawObjListTexture(ol->root, curData, sh, cam_pos);
+}
 
 void drawHighlightRenderList(RenderList *ol, GLint uModel)
 {
@@ -139,24 +176,6 @@ void drawHighlightRenderList(RenderList *ol, GLint uModel)
     BufferData *curData = curNode->object->bufferData;
     bufferDataUse(curData);
     _drawObjListHighlight(ol->root, curData, uModel);
-}
-
-void drawTextureRenderList(RenderList *ol, GLint uModel, GLint uTexture)
-{
-    if (!ol->root) return;
-    ObjNode *curNode = ol->root;
-    BufferData *curData = curNode->object->bufferData;
-    bufferDataUse(curData);
-    _drawObjListTexture(ol->root, curData, uModel, uTexture);
-}
-
-void drawColorRenderList(RenderList *ol, MaterialShader *sh, Vec3 *campos)
-{
-    if (!ol->root) return;
-    ObjNode *curNode = ol->root;
-    BufferData *curData = curNode->object->bufferData;
-    bufferDataUse(curData);
-    _drawObjListColor(ol->root, curData, sh, campos);
 }
 
 void drawDebugColorRenderList(RenderList *ol, GLint uModel, GLint uColor)
@@ -184,20 +203,21 @@ void _drawObjListHighlight(ObjNode *sn, BufferData *cur_data, GLint uModel)
     _drawObjListHighlight(sn->next, cur_data, uModel);
 }
 
-void _drawObjListTexture(ObjNode *sn, BufferData *cur_data, GLint uModel, GLint uTexture)
+void _drawObjListColor(ObjNode *sn, BufferData *cur_data, ColorShader *sh, Vec3 *cam_pos)
 {
     if (!sn) return;
     CHECK_CUR_DATA(sn->object->bufferData, cur_data);
-    drawTextureSceneObject(sn->object, uModel, uTexture);
-    _drawObjListTexture(sn->next, cur_data, uModel, uTexture);
+    drawColorSceneObject(sn->object, sh, cam_pos);
+    _drawObjListColor(sn->next, cur_data, sh, cam_pos);
 }
 
-void _drawObjListColor(ObjNode *sn, BufferData *cur_data, MaterialShader *sh, Vec3 *campos)
+// void _drawObjListTexture(ObjNode *sn, BufferData *cur_data, GLint uModel, GLint uTexture)
+void _drawObjListTexture(ObjNode *sn, BufferData *cur_data, TexShader *sh, Vec3 *cam_pos)
 {
     if (!sn) return;
     CHECK_CUR_DATA(sn->object->bufferData, cur_data);
-    drawColorSceneObject(sn->object, sh, campos);
-    _drawObjListColor(sn->next, cur_data, sh, campos);
+    drawTextureSceneObject(sn->object, sh, cam_pos);
+    _drawObjListTexture(sn->next, cur_data, sh, cam_pos);
 }
 
 void _drawObjListColorDebug(ObjNode *sn, BufferData *cur_data, GLint uModel, GLint uColor)
@@ -211,6 +231,33 @@ void _drawObjListColorDebug(ObjNode *sn, BufferData *cur_data, GLint uModel, GLi
 /**
  * SceneObject draw call definitions
  */
+void drawColorSceneObject(SceneObject *so, ColorShader *sh, Vec3 *cam_pos)
+{
+    glUniform3fv(sh->uColor, 1, (float *)&so->color);
+
+    setMaterialUniforms(&sh->uMaterial, &so->material);
+    glUniform3fv(sh->uCamPos, 1, (float *)cam_pos);
+    glUniform3fv(sh->uWorldPos, 1, (float *)&so->position);
+    glUniformMatrix4fv(sh->uModel, 1, GL_FALSE, so->drawMatrix->data);
+    glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
+}
+
+// void drawTextureSceneObject(SceneObject *so, GLint uModel, GLint uTexture)
+void drawTextureSceneObject(SceneObject *so, TexShader *sh, Vec3 *cam_pos)
+{
+    glActiveTexture(so->activeTexture);
+    glBindTexture(GL_TEXTURE_2D, so->texture);
+    glUniform1i(sh->uTexture, so->textureIndex);
+
+    setMaterialUniforms(&sh->uMaterial, &so->material);
+    glUniform3fv(sh->uCamPos, 1, (float *)cam_pos);
+    glUniform3fv(sh->uWorldPos, 1, (float *)&so->position);
+    glUniformMatrix4fv(sh->uModel, 1, GL_FALSE, so->drawMatrix->data);
+    glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void drawHighlightSceneObject(SceneObject *so, GLint uModel)
 {
     Mat4 m;
@@ -218,26 +265,6 @@ void drawHighlightSceneObject(SceneObject *so, GLint uModel)
     setMat4(&m, so->drawMatrix);
     scaleMat4(&m, &scl);
     glUniformMatrix4fv(uModel, 1, GL_FALSE, m.data);
-    glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-}
-
-void drawTextureSceneObject(SceneObject *so, GLint uModel, GLint uTexture)
-{
-    glActiveTexture(so->activeTexture);
-    glBindTexture(GL_TEXTURE_2D, so->texture);
-    glUniform1i(uTexture, so->textureIndex);
-    glUniformMatrix4fv(uModel, 1, GL_FALSE, so->drawMatrix->data);
-    glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-// void drawColorSceneObject(SceneObject *so, GLint uModel, GLint uColor)
-void drawColorSceneObject(SceneObject *so, MaterialShader *sh, Vec3 *campos)
-{
-    setMaterialUniforms(&sh->uMaterial, &so->material);
-    glUniform3fv(sh->uCamPos, 1, (float *)campos);
-    glUniform3fv(sh->uWorldPos, 1, (float *)&so->position);
-    glUniformMatrix4fv(sh->uModel, 1, GL_FALSE, so->drawMatrix->data);
     glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
 }
 
@@ -257,21 +284,21 @@ void drawDebugColorSceneObject(SceneObject *so, GLint uModel, GLint uColor)
 // }
 
 // Local function definitions
-void _renderMaterial(Render_t *r)
+void _renderColor(Render_t *r)
 {
-    MaterialShader *sh = &r->mShader;
-    _setMaterialShader(&r->scene, &r->world, sh);
-    Vec3 *pos = getCameraPosition(r->scene.camera);
-    drawSceneColor(&r->scene, sh, pos);// getCameraPosition(r->scene.camera));
+    ColorShader *sh = &r->cShader;
+    _setColorShader(&r->scene, &r->world, sh);
+    drawSceneColor(&r->scene, sh, getCameraPosition(r->scene.camera));
     bufferDataFinish();
 
 }
 
 static void _renderTexture(Render_t *r)
 {
-    ObjShader *o = r->oShader;
-    _setObjShader(&r->scene, &r->world, o);
-    drawSceneTexture(&r->scene, o->shader.uModel, o->uTexture);
+    TexShader *sh = &r->tShader;
+    _setTexShader(&r->scene, &r->world, sh);
+    // drawSceneTexture(&r->scene, sh->shader.uModel, sh->uTexture);
+    drawSceneTexture(&r->scene, sh, getCameraPosition(r->scene.camera));
     bufferDataFinish();
 }
 
@@ -281,9 +308,9 @@ void _renderHighlight(Render_t *r)
     glStencilMask(0x00);
     glDisable(GL_DEPTH_TEST);
 
-    HighlightShader *hl = &r->hlShader;
-    _setHighlightShader(&r->scene, &r->world, hl, r->windowW, r->windowH);
-    drawSceneHighlight(&r->scene, hl->uMat.model);
+    HighlightShader *sh = &r->hlShader;
+    _setHighlightShader(&r->scene, &r->world, sh, r->windowW, r->windowH);
+    drawSceneHighlight(&r->scene, sh->uModel);
 
     glStencilMask(0xff);
     glEnable(GL_DEPTH_TEST);
@@ -291,38 +318,41 @@ void _renderHighlight(Render_t *r)
     bufferDataFinish();
 }
 
-static void _setMaterialShader(Scene *s, World_t *w, MaterialShader *sh)
+static void _setColorShader(Scene *s, World_t *w, ColorShader *sh)
 {
     glUseProgram(sh->program);
     passViewMatrix(s, sh->uView);
     passProjectionMatrix(s, sh->uProjection);
     setLightUniforms(&sh->uDirLight, &w->dirLight);
+    setSpotLightUniforms(&sh->uSpotLight, &w->spotLight);
+    setPointLightUniforms(&sh->uPointLight, &w->pointLight);
 }
 
-static void _setHighlightShader(Scene *s, World_t *w, HighlightShader *h, float ww, float wh)
+static void _setTexShader(Scene *s, World_t *w, TexShader *sh)
 {
-    glUseProgram(h->header.program);
-    passViewMatrix(s, h->uMat.view);
-    passProjectionMatrix(s, h->uMat.projection);
-    glUniform2f(h->uResolution, ww, wh);
-    glUniform1f(h->uTime, w->lastTime / 1000.0f);
-}
-
-static void _setObjShader(Scene *s, World_t *w, ObjShader *o)
-{
-    Shader_t *sh = &o->shader;
     glUseProgram(sh->program);
     passViewMatrix(s, sh->uView);
     passProjectionMatrix(s, sh->uProjection);
-    setLightUniforms(&o->uLight, &w->dirLight);
+    setLightUniforms(&sh->uDirLight, &w->dirLight);
+    setSpotLightUniforms(&sh->uSpotLight, &w->spotLight);
+    setPointLightUniforms(&sh->uPointLight, &w->pointLight);
+}
+
+static void _setHighlightShader(Scene *s, World_t *w, HighlightShader *sh, float ww, float wh)
+{
+    glUseProgram(sh->program);
+    passViewMatrix(s, sh->uView);
+    passProjectionMatrix(s, sh->uProjection);
+    glUniform2f(sh->uResolution, ww, wh);
+    glUniform1f(sh->uTime, w->lastTime / 1000.0f);
 }
 
 void _renderHighlightColor(Render_t *r)
 {
     glStencilFunc(GL_ALWAYS, 1, 0xff);
     glStencilMask(0xff);
-    MaterialShader *sh = &r->mShader;
-    _setMaterialShader(&r->scene, &r->world, sh);
+    ColorShader *sh = &r->cShader;
+    _setColorShader(&r->scene, &r->world, sh);
     drawSceneHighlightColor(&r->scene, sh, getCameraPosition(r->scene.camera));
     bufferDataFinish();
 }
@@ -331,8 +361,8 @@ void _renderHighlightTexture(Render_t *r)
 {
     glStencilFunc(GL_ALWAYS, 1, 0xff);
     glStencilMask(0xff);
-    ObjShader *o = r->oShader;
-    _setObjShader(&r->scene, &r->world, o);
-    drawSceneHighlightTexture(&r->scene, o->shader.uModel, o->uTexture);
+    TexShader *sh = &r->tShader;
+    _setTexShader(&r->scene, &r->world, sh);
+    drawSceneHighlightTexture(&r->scene, sh, getCameraPosition(r->scene.camera));
     bufferDataFinish();
 }

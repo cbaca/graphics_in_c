@@ -3,6 +3,7 @@
 #include "BufferData.h"
 #include "Maths.h"
 #include "Shader.h"
+#include "ShaderTypes.h"
 #include <GL/glew.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -49,13 +50,6 @@ struct SceneObject {
     BufferData *bufferData;
 };
 */
-
-typedef struct Material {
-    Vec3 ambient; // color of the object under ambient lighting
-    Vec3 diffuse; // color of the object under diffuse lighting
-    Vec3 specular; // specular sets the color impact a specular light has on the object
-    float shininess; // scattering/radius of specular lightlight
-} Material;
 
 struct SceneObject {
     // header

@@ -7,108 +7,156 @@
 #include <errno.h>
 #include <assert.h>
 
-#define OBJ_VSHADER_PATH "shaders/obj_vshader.glsl"
-#define OBJ_FSHADER_PATH "shaders/obj_fshader.glsl"
-#define MATERIAL_VSHADER_PATH "shaders/material_vshader.glsl"
-#define MATERIAL_FSHADER_PATH "shaders/material_fshader.glsl"
+#define TEX_VSHADER_PATH "shaders/texture_vshader.glsl"
+#define TEX_FSHADER_PATH "shaders/texture_fshader.glsl"
+#define COLOR_VSHADER_PATH "shaders/color_vshader.glsl"
+#define COLOR_FSHADER_PATH "shaders/color_fshader.glsl"
 #define HL_VSHADER_PATH "shaders/highlight_vshader.glsl"
 #define HL_FSHADER_PATH "shaders/highlight_fshader.glsl"
 #define PICKING_VSHADER_PATH "shaders/picking_vshader.glsl"
 #define PICKING_FSHADER_PATH "shaders/picking_fshader.glsl"
 
+#define SET_MATRIX_UNI(s,p) \
+    s->uModel = glGetUniformLocation(p, "uModel"); \
+    s->uView = glGetUniformLocation(p, "uView"); \
+    s->uProjection = glGetUniformLocation(p, "uProjection");
+
+#define SET_DIRLIGHT_UNI(s,p) \
+    s->uDirLight.color = glGetUniformLocation(p, "uDirLight.color"); \
+    s->uDirLight.direction = glGetUniformLocation(p, "uDirLight.direction"); \
+    s->uDirLight.ambientIntensity = glGetUniformLocation(p, "uDirLight.ambientIntensity"); \
+    s->uDirLight.diffuseIntensity = glGetUniformLocation(p, "uDirLight.diffuseIntensity");
+
+#define SET_MATERIAL_UNI(s,p) \
+    s->uMaterial.ambient = glGetUniformLocation(p, "uMaterial.ambient"); \
+    s->uMaterial.diffuse = glGetUniformLocation(p, "uMaterial.diffuse"); \
+    s->uMaterial.specular = glGetUniformLocation(p, "uMaterial.specular"); \
+    s->uMaterial.shininess = glGetUniformLocation(p, "uMaterial.shininess");
+
+#define SET_SPOTLIGHT_UNI(s,p) \
+    s->uSpotLight.direction = glGetUniformLocation(p, "uSpotLight.direction"); \
+    s->uSpotLight.ambientIntensity = glGetUniformLocation(p, "uSpotLight.ambientIntensity"); \
+    s->uSpotLight.diffuseIntensity = glGetUniformLocation(p, "uSpotLight.diffuseIntensity"); \
+    s->uSpotLight.inner_cutoff = glGetUniformLocation(p, "uSpotLight.inner_cutoff"); \
+    s->uSpotLight.outer_cutoff = glGetUniformLocation(p, "uSpotLight.diffuseIntensity");
+
+#define SET_POINTLIGHT_UNI(s,p) \
+    s->uPointLight.position = glGetUniformLocation(p, "uPointLight.position"); \
+    s->uPointLight.ambient = glGetUniformLocation(p, "uPointLight.ambient"); \
+    s->uPointLight.diffuse = glGetUniformLocation(p, "uPointLight.diffuse"); \
+    s->uPointLight.specular = glGetUniformLocation(p, "uPointLight.specular"); \
+    s->uPointLight.Kc = glGetUniformLocation(p, "uPointLight.Kc"); \
+    s->uPointLight.Kl = glGetUniformLocation(p, "uPointLight.Kl"); \
+    s->uPointLight.Kq = glGetUniformLocation(p, "uPointLight.Kq");
+
+#define SET_POS_UNI(s,p) \
+    s->uWorldPos = glGetUniformLocation(p, "uWorldPos"); \
+    s->uCamPos = glGetUniformLocation(p, "uCamPos");
+
+static char **shader_paths;
+static size_t num_shader_files;
+
 static GLuint _compileShader(const char *const *vShaderText, const char *const *fShaderText, int *err);
+
+int initShaderData(const char *dirpath)
+{
+    shader_paths = readDirFiles(dirpath, &num_shader_files);
+    if (!shader_paths)
+        return 0;
+    sortStringArray(shader_paths, num_shader_files);
+    return 1;
+}
+
+void printShaderFiles(void)
+{
+    printStringArray("Shader files:", shader_paths, num_shader_files);
+}
+
+void destroyShaderData(void)
+{
+    size_t i;
+    for (i = 0; i < num_shader_files; ++i)
+        free(shader_paths[i]);
+    free(shader_paths);
+}
+
+ColorShader *initColorShader(ColorShader *s)
+{
+    const char vpath[] = COLOR_VSHADER_PATH;
+    const char fpath[] = COLOR_FSHADER_PATH;
+
+    Program_t program = compileShaderFromSource(vpath, fpath);
+    if (!program) return NULL;
+    s->aPosition = 0;
+    s->aNormals = 1;
+
+    SET_MATRIX_UNI(s, program);
+    SET_POS_UNI(s, program);
+    SET_MATERIAL_UNI(s, program);
+    SET_DIRLIGHT_UNI(s, program);
+    SET_SPOTLIGHT_UNI(s, program);
+    SET_POINTLIGHT_UNI(s, program);
+    s->uColor = glGetUniformLocation(program, "uColor");
+
+    s->program = program;
+    s->st = COLOR_SHADER;
+    return s;
+}
+
+TexShader *initTexShader(TexShader *s)
+{
+    const char vpath[] = TEX_VSHADER_PATH;
+    const char fpath[] = TEX_FSHADER_PATH;
+
+    Program_t program = compileShaderFromSource(vpath, fpath);
+    if (!program) return NULL;
+    s->aPosition = 0;
+    s->aNormals = 1;
+
+    SET_MATRIX_UNI(s, program);
+    SET_POS_UNI(s, program);
+    SET_MATERIAL_UNI(s, program);
+    SET_DIRLIGHT_UNI(s, program);
+    SET_SPOTLIGHT_UNI(s, program);
+    SET_POINTLIGHT_UNI(s, program);
+
+    s->aUVs = 2;
+    s->uTexture = glGetUniformLocation(program, "uTexture");
+
+    s->program = program;
+    s->st = TEX_SHADER;
+    return s;
+}
+
+HighlightShader *initHighlightShader(HighlightShader *s)
+{
+    const char vpath[] = HL_VSHADER_PATH;
+    const char fpath[] = HL_FSHADER_PATH;
+    s->program = compileShaderFromSource(vpath, fpath);
+    if (!s->program) return NULL;
+    s->st = HIGHLIGHT_SHADER;
+    s->aPosition = 0;
+    Program_t program = s->program;
+    SET_MATRIX_UNI(s, program);
+    s->uTime = glGetUniformLocation(program, "uTime");
+    s->uResolution = glGetUniformLocation(program, "uResolution");
+    return s;
+}
+
 
 PickingShader *pickingShaderInit(PickingShader *s)
 {
     const char vpath[] = PICKING_VSHADER_PATH;
     const char fpath[] = PICKING_FSHADER_PATH;
-    s->header.program = compileShaderFromSource(vpath, fpath);
-    if (!s->header.program) return 0;
+    s->program = compileShaderFromSource(vpath, fpath);
+    if (!s->program) return 0;
     s->aPosition = 0;
-    Program_t program = s->header.program;
+    Program_t program = s->program;
 
-    s->uMat.model = glGetUniformLocation(program, "uModel");
-    s->uMat.view = glGetUniformLocation(program, "uView");
-    s->uMat.projection = glGetUniformLocation(program, "uProjection");
+    SET_MATRIX_UNI(s, program);
     s->uColor = glGetUniformLocation(program, "uColor");
-    s->header.type = PICKING_SHADER;
+    s->st = PICKING_SHADER;
     return s;
-}
-
-HighlightShader *highlightShaderInit(HighlightShader *s)
-{
-    const char vpath[] = HL_VSHADER_PATH;
-    const char fpath[] = HL_FSHADER_PATH;
-    s->header.program = compileShaderFromSource(vpath, fpath);
-    if (!s->header.program) return 0;
-    s->aPosition = 0;
-    Program_t program = s->header.program;
-
-    s->uMat.model = glGetUniformLocation(program, "uModel");
-    s->uMat.view = glGetUniformLocation(program, "uView");
-    s->uMat.projection = glGetUniformLocation(program, "uProjection");
-    s->uTime = glGetUniformLocation(program, "uTime");
-    s->uResolution = glGetUniformLocation(program, "uResolution");
-    s->header.type = HIGHLIGHT_SHADER;
-    return s;
-}
-
-MaterialShader *materialShaderInit(MaterialShader *s)
-{
-    const char vpath[] = MATERIAL_VSHADER_PATH;
-    const char fpath[] = MATERIAL_FSHADER_PATH;
-
-    Program_t program = compileShaderFromSource(vpath, fpath);
-    if (!program) return 0;
-    s->aPosition = 0;
-    s->aNormals = 1;
-
-    s->uModel = glGetUniformLocation(program, "uModel");
-    s->uView = glGetUniformLocation(program, "uView");
-    s->uProjection = glGetUniformLocation(program, "uProjection");
-    s->uWorldPos = glGetUniformLocation(program, "uWorldPos");
-
-    s->uCamPos = glGetUniformLocation(program, "uCamPos");
-    s->uDirLight.color = glGetUniformLocation(program, "uDirLight.color");
-    s->uDirLight.direction = glGetUniformLocation(program, "uDirLight.direction");
-    s->uDirLight.ambientIntensity = glGetUniformLocation(program, "uDirLight.ambientIntensity");
-    s->uDirLight.diffuseIntensity = glGetUniformLocation(program, "uDirLight.diffuseIntensity");
-
-    s->uMaterial.ambient = glGetUniformLocation(program, "uMaterial.ambient");
-    s->uMaterial.diffuse = glGetUniformLocation(program, "uMaterial.diffuse");
-    s->uMaterial.specular = glGetUniformLocation(program, "uMaterial.specular");
-    s->uMaterial.shininess = glGetUniformLocation(program, "uMaterial.shininess");
-
-    s->program = program;
-    s->st = MATERIAL_SHADER;
-    return s;
-}
-
-ObjShader *newObjShader(void)
-{
-    const char vpath[] = OBJ_VSHADER_PATH;
-    const char fpath[] = OBJ_FSHADER_PATH;
-    Program_t program = compileShaderFromSource(vpath, fpath);
-    if (!program) {
-        fprintf(stderr, "ObjShader program null\n");
-        return NULL;
-    }
-    ObjShader *os = malloc(sizeof(ObjShader));
-
-    Shader_t *sh = (Shader_t *)os;
-    sh->program = program;
-    sh->uModel = glGetUniformLocation(program, "uModel");
-    sh->uView = glGetUniformLocation(program, "uView");
-    sh->uProjection = glGetUniformLocation(program, "uProjection");
-
-    os->uTexture = glGetUniformLocation(program, "uTexture");
-    if (!os->uTexture)
-        fprintf(stderr, "Failed to retreive uTexture location\n");
-    os->uLight.color = glGetUniformLocation(program, "uDirLight.color");
-    os->uLight.direction = glGetUniformLocation(program, "uDirLight.direction");
-    os->uLight.ambientIntensity = glGetUniformLocation(program, "uDirLight.ambientIntensity");
-    os->uLight.diffuseIntensity = glGetUniformLocation(program, "uDirLight.diffuseIntensity");
-    return os;
 }
 
 Program_t compileShaderFromSource(const char *vpath, const char *fpath)
@@ -217,7 +265,7 @@ static GLuint _compileShader(const char *const *vShaderText, const char *const *
     return program;
 }
 
-void shaderUse(Shader_t *s)
+void shaderUse(BaseShader *s)
 {
     glUseProgram(s->program);
 }

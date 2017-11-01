@@ -19,7 +19,7 @@ void sortStringArray(char **array, size_t len)
     // insertion sort
     size_t i, j, k;
     for (i = 1; i < len; ++i) {
-        for (j = i, k = i - 1; j > 0 && strcmp(array[k], array[k]) > 0; j--, k--) {
+        for (j = i, k = i - 1; j > 0 && strcmp(array[k], array[j]) > 0; j--, k--) {
             char *tmp = array[k];
             array[k] = array[j];
             array[j] = tmp;
@@ -82,9 +82,8 @@ char **readDirFiles(const char *path, size_t *filecount)
     size_t num_files = 0;
     long tell = telldir(dir);
 
-    while ((ent = readdir(dir)) != NULL) {
+    while ((ent = readdir(dir)) != NULL)
         num_files++;
-    }
 
     size_t pathlen = strlen(path);
     seekdir(dir, tell);

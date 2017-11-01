@@ -1,14 +1,13 @@
 #ifndef SHADERS_H
 #define SHADERS_H
 #include <GL/glew.h>
+#include "ShaderTypes.h"
 
 typedef GLuint Program_t;
+typedef GLuint Attrib_t;
+typedef GLint Uniform_t;
 
-typedef enum ShaderType {
-    HIGHLIGHT_SHADER,
-    MATERIAL_SHADER,
-    PICKING_SHADER
-} ShaderType;
+typedef enum ShaderType { COLOR_SHADER, TEX_SHADER, HIGHLIGHT_SHADER, PICKING_SHADER } ShaderType;
 
 /*
  * typedef struct Material { Vec3 ambient; Vec3 diffuse; Vec3 specular; float shininess; } Material;
@@ -38,105 +37,94 @@ typedef struct LightUniforms {
     GLint diffuseIntensity;
 } LightUniforms;
 
-typedef struct MatUniforms { // hurry and kill this
-    GLint model;
-    GLint view;
-    GLint projection;
-} MatUniforms;
+typedef struct PointLightUniforms {
+    Uniform_t position;
+    Uniform_t ambient, diffuse, specular;
+    Uniform_t Kc, Kl, Kq;
+} PointLightUniforms;
 
-typedef struct shaderHeader {
-    ShaderType type;
-    Program_t program;
-} shaderHeader;
+typedef struct SpotLightUniforms {
+    Uniform_t direction;
+    Uniform_t ambientIntensity, diffuseIntensity;
+    Uniform_t inner_cutoff, outer_cutoff;
+} SpotLightUniforms;
 
-typedef struct PickingShader {
-    shaderHeader header;
+typedef struct ColorShader {
+    ShaderType       st;
+    Program_t        program;
+    Attrib_t         aPosition, aNormals;
+    Uniform_t        uModel, uView, uProjection;
+    Uniform_t        uCamPos, uWorldPos;
+    MaterialUniforms   uMaterial;
+    LightUniforms      uDirLight;
+    PointLightUniforms uPointLight;
+    SpotLightUniforms  uSpotLight;
+
+    Uniform_t uColor;
+} ColorShader;
+
+typedef struct TexShader {
+    ShaderType       st;
+    Program_t        program;
+    Attrib_t         aPosition, aNormals;
+    Uniform_t        uModel, uView, uProjection;
+    Uniform_t        uCamPos, uWorldPos;
+    MaterialUniforms   uMaterial;
+    LightUniforms      uDirLight;
+    PointLightUniforms uPointLight;
+    SpotLightUniforms  uSpotLight;
+
+    Uniform_t uTexture;
+    Attrib_t  aUVs;
+
+} TexShader;
+
+typedef struct HighlightShader {
+    /* shaderHeader header;
     GLuint aPosition;
     MatUniforms uMat;
+    GLint uTime;
+    GLint uResolution; */
+    ShaderType st;
+    Program_t program;
+    Attrib_t  aPosition, PADDING;
+    Uniform_t uModel, uView, uProjection;
+    Uniform_t uTime, uResolution;
+} HighlightShader;
+
+typedef struct BaseShader {
+    ShaderType st;
+    Program_t program;
+    Attrib_t  a0, a1;
+    Uniform_t u0, u1, u2;
+} BaseShader;
+
+typedef union GenericShader {
+    BaseShader b;
+    ColorShader c;
+    TexShader t;
+    HighlightShader hl;
+} GenericShader;
+
+typedef struct PickingShader {
+    ShaderType st;
+    Program_t program;
+    Attrib_t  aPosition, PADDING;
+    Uniform_t uModel, uView, uProjection;
     // GLint uDrawIndex;
     // GLint uObjectIndex;
     GLint uColor;
 } PickingShader;
 
-typedef struct HighlightShader {
-    shaderHeader header;
-    GLuint aPosition;
-    MatUniforms uMat;
-    GLint uTime;
-    GLint uResolution;
-} HighlightShader;
+int initShaderData(const char *dirpath);
+void printShaderFiles(void);
+void destroyShaderData(void);
 
-typedef struct MaterialShader {
-    ShaderType st;
-    Program_t program;
-
-    GLuint aPosition;
-    GLuint aNormals;
-
-    GLint uModel;
-    GLint uView;
-    GLint uProjection;
-    GLint uWorldPos;
-
-    GLint uCamPos;
-    LightUniforms uDirLight;
-    MaterialUniforms uMaterial;
-
-    // GLint uTime;
-    // GLint uResolution;
-    // GLint uDrawIndex;
-    // GLint uObjIndex;
-
-} MaterialShader;
-
-typedef struct GenericShader {
-    ShaderType shadertype;
-    GLuint program;
-    GLuint aPosition;
-    GLuint aNormals;
-    GLuint aColor;
-    GLuint aTexCoords;
-    GLint uModel;
-    GLint uView;
-    GLint uProjection;
-    GLint uColor;
-    GLint uTime;
-    GLint uResolution;
-    GLint uDirLight_color;
-    GLint uDirLight_direction;
-    GLint uDirLight_ambientIntensity;
-    GLint uDirLight_diffuseIntensity;
-    GLint uDrawIndex;
-    GLint uObjIndex;
-
-} GenericShader;
-
-typedef struct Shader_t {
-    Program_t program;
-    GLint uModel;
-    GLint uView;
-    GLint uProjection;
-} Shader_t;
-
-typedef struct ObjShader {
-    Shader_t shader;
-    GLint uTexture;
-    LightUniforms uLight;
-} ObjShader;
-
-// glBindVertexArray        -- mesh         meshUse()
-// glBindBuffer(vbo/nbo...) -- mesh         meshUse()
-// glBindBuffer(ebo)        -- mesh         meshUse()
-// glUse Program            -- shader       shaderUse()
-// glUniform...             -- shader, model
-// glDrawElements           -- mesh         meshDraw()
-
-
-MaterialShader *materialShaderInit(MaterialShader *s);
-HighlightShader *highlightShaderInit(HighlightShader *s);
+ColorShader *initColorShader(ColorShader *s);
+TexShader *initTexShader(TexShader *s);
+HighlightShader *initHighlightShader(HighlightShader *s);
 PickingShader *pickingShaderInit(PickingShader *s);
-ObjShader *newObjShader(void);
-void shaderUse(Shader_t *s);
+void shaderUse(BaseShader *s);
 
 Program_t compileShaderFromSource(const char *vpath, const char *fpath);
 

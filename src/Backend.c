@@ -1,6 +1,7 @@
 #include "Backend.h"
 #include "meshdata.h"
 #include "texture.h"
+#include "Shader.h"
 #include <stdlib.h>
 #include <stdio.h>
 #define GLEW_STATIC
@@ -11,6 +12,7 @@
 #define DEFAULT_WINDOW_HEIGHT 540
 #define MESHDATA_ROOT_DIR "resources/meshdata"
 #define TEXTURES_ROOT_DIR "resources/textures"
+#define SHADERS_ROOT_DIR "shaders"
 
 /**
  * Global variables
@@ -120,6 +122,7 @@ int backendExitSuccess(void)
 {
     finalizeTextures();
     finalizeMeshData();
+    destroyShaderData();
     glfwDestroyWindow(glfwWindow);
     glfwTerminate();
     return EXIT_SUCCESS;
@@ -193,15 +196,17 @@ void backendInit(void)
         exit(EXIT_FAILURE);
     }
 
-
-    initTextures(TEXTURES_ROOT_DIR);
-    initMeshData(MESHDATA_ROOT_DIR);
-    printObjFiles();
-    printTexFiles();
-
     // glFrontFace(GL_CW); glCullFace(GL_BACK); glEnable(GL_CULL_FACE); glDepthFunc(GL_LESS);
     // glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); glEnable(GL_STENCIL_TEST);
     // glStencilFunc(GL_NOTEQUAL, 1, 0xff); glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+    initTextures(TEXTURES_ROOT_DIR);
+    initMeshData(MESHDATA_ROOT_DIR);
+    initShaderData(SHADERS_ROOT_DIR);
+    printObjFiles();
+    printTexFiles();
+    printShaderFiles();
+
 }
 
 static void _backendSetCallbacks(void)
@@ -237,32 +242,19 @@ static void _backendKeyDownCallback(
     NeedsUpdate = true;
     if (action == GLFW_PRESS) {
         switch (key) {
-            case GLFW_KEY_A: Keypresses[KEY_A] = true; break;
-            case GLFW_KEY_B: Keypresses[KEY_B] = true; break;
-            case GLFW_KEY_C: Keypresses[KEY_C] = true; break;
-            case GLFW_KEY_D: Keypresses[KEY_D] = true; break;
-            case GLFW_KEY_E: Keypresses[KEY_E] = true; break;
-            case GLFW_KEY_F: Keypresses[KEY_F] = true; break;
-            case GLFW_KEY_G: Keypresses[KEY_G] = true; break;
-            case GLFW_KEY_H: Keypresses[KEY_H] = true; break;
-            case GLFW_KEY_I: Keypresses[KEY_I] = true; break;
-            case GLFW_KEY_J: Keypresses[KEY_J] = true; break;
-            case GLFW_KEY_K: Keypresses[KEY_K] = true; break;
-            case GLFW_KEY_L: Keypresses[KEY_L] = true; break;
-            case GLFW_KEY_M: Keypresses[KEY_M] = true; break;
-            case GLFW_KEY_N: Keypresses[KEY_N] = true; break;
-            case GLFW_KEY_O: Keypresses[KEY_O] = true; break;
-            case GLFW_KEY_P: Keypresses[KEY_P] = true; break;
-            case GLFW_KEY_Q: Keypresses[KEY_Q] = true; break;
-            case GLFW_KEY_R: Keypresses[KEY_R] = true; break;
-            case GLFW_KEY_S: Keypresses[KEY_S] = true; break;
-            case GLFW_KEY_T: Keypresses[KEY_T] = true; break;
-            case GLFW_KEY_U: Keypresses[KEY_U] = true; break;
-            case GLFW_KEY_V: Keypresses[KEY_V] = true; break;
-            case GLFW_KEY_W: Keypresses[KEY_W] = true; break;
-            case GLFW_KEY_X: Keypresses[KEY_X] = true; break;
-            case GLFW_KEY_Y: Keypresses[KEY_Y] = true; break;
-            case GLFW_KEY_Z: Keypresses[KEY_Z] = true; break;
+            case GLFW_KEY_A: Keypresses[KEY_A] = true; break; case GLFW_KEY_B: Keypresses[KEY_B] = true; break;
+            case GLFW_KEY_C: Keypresses[KEY_C] = true; break; case GLFW_KEY_D: Keypresses[KEY_D] = true; break;
+            case GLFW_KEY_E: Keypresses[KEY_E] = true; break; case GLFW_KEY_F: Keypresses[KEY_F] = true; break;
+            case GLFW_KEY_G: Keypresses[KEY_G] = true; break; case GLFW_KEY_H: Keypresses[KEY_H] = true; break;
+            case GLFW_KEY_I: Keypresses[KEY_I] = true; break; case GLFW_KEY_J: Keypresses[KEY_J] = true; break;
+            case GLFW_KEY_K: Keypresses[KEY_K] = true; break; case GLFW_KEY_L: Keypresses[KEY_L] = true; break;
+            case GLFW_KEY_M: Keypresses[KEY_M] = true; break; case GLFW_KEY_N: Keypresses[KEY_N] = true; break;
+            case GLFW_KEY_O: Keypresses[KEY_O] = true; break; case GLFW_KEY_P: Keypresses[KEY_P] = true; break;
+            case GLFW_KEY_Q: Keypresses[KEY_Q] = true; break; case GLFW_KEY_R: Keypresses[KEY_R] = true; break;
+            case GLFW_KEY_S: Keypresses[KEY_S] = true; break; case GLFW_KEY_T: Keypresses[KEY_T] = true; break;
+            case GLFW_KEY_U: Keypresses[KEY_U] = true; break; case GLFW_KEY_V: Keypresses[KEY_V] = true; break;
+            case GLFW_KEY_W: Keypresses[KEY_W] = true; break; case GLFW_KEY_X: Keypresses[KEY_X] = true; break;
+            case GLFW_KEY_Y: Keypresses[KEY_Y] = true; break; case GLFW_KEY_Z: Keypresses[KEY_Z] = true; break;
             case GLFW_KEY_ESCAPE: Keypresses[KEY_ESC] = true; break;
             case GLFW_KEY_SPACE: Keypresses[KEY_SPACE] = true; break;
             case GLFW_KEY_LEFT_SHIFT: Keypresses[KEY_LSHIFT] = true; break;
@@ -270,32 +262,19 @@ static void _backendKeyDownCallback(
         }
     } else if (action == GLFW_RELEASE) {
         switch (key) {
-            case GLFW_KEY_A: Keypresses[KEY_A] = false; break;
-            case GLFW_KEY_B: Keypresses[KEY_B] = false; break;
-            case GLFW_KEY_C: Keypresses[KEY_C] = false; break;
-            case GLFW_KEY_D: Keypresses[KEY_D] = false; break;
-            case GLFW_KEY_E: Keypresses[KEY_E] = false; break;
-            case GLFW_KEY_F: Keypresses[KEY_F] = false; break;
-            case GLFW_KEY_G: Keypresses[KEY_G] = false; break;
-            case GLFW_KEY_H: Keypresses[KEY_H] = false; break;
-            case GLFW_KEY_I: Keypresses[KEY_I] = false; break;
-            case GLFW_KEY_J: Keypresses[KEY_J] = false; break;
-            case GLFW_KEY_K: Keypresses[KEY_K] = false; break;
-            case GLFW_KEY_L: Keypresses[KEY_L] = false; break;
-            case GLFW_KEY_M: Keypresses[KEY_M] = false; break;
-            case GLFW_KEY_N: Keypresses[KEY_N] = false; break;
-            case GLFW_KEY_O: Keypresses[KEY_O] = false; break;
-            case GLFW_KEY_P: Keypresses[KEY_P] = false; break;
-            case GLFW_KEY_Q: Keypresses[KEY_Q] = false; break;
-            case GLFW_KEY_R: Keypresses[KEY_R] = false; break;
-            case GLFW_KEY_S: Keypresses[KEY_S] = false; break;
-            case GLFW_KEY_T: Keypresses[KEY_T] = false; break;
-            case GLFW_KEY_U: Keypresses[KEY_U] = false; break;
-            case GLFW_KEY_V: Keypresses[KEY_V] = false; break;
-            case GLFW_KEY_W: Keypresses[KEY_W] = false; break;
-            case GLFW_KEY_X: Keypresses[KEY_X] = false; break;
-            case GLFW_KEY_Y: Keypresses[KEY_Y] = false; break;
-            case GLFW_KEY_Z: Keypresses[KEY_Z] = false; break;
+            case GLFW_KEY_A: Keypresses[KEY_A] = false; break; case GLFW_KEY_B: Keypresses[KEY_B] = false; break;
+            case GLFW_KEY_C: Keypresses[KEY_C] = false; break; case GLFW_KEY_D: Keypresses[KEY_D] = false; break;
+            case GLFW_KEY_E: Keypresses[KEY_E] = false; break; case GLFW_KEY_F: Keypresses[KEY_F] = false; break;
+            case GLFW_KEY_G: Keypresses[KEY_G] = false; break; case GLFW_KEY_H: Keypresses[KEY_H] = false; break;
+            case GLFW_KEY_I: Keypresses[KEY_I] = false; break; case GLFW_KEY_J: Keypresses[KEY_J] = false; break;
+            case GLFW_KEY_K: Keypresses[KEY_K] = false; break; case GLFW_KEY_L: Keypresses[KEY_L] = false; break;
+            case GLFW_KEY_M: Keypresses[KEY_M] = false; break; case GLFW_KEY_N: Keypresses[KEY_N] = false; break;
+            case GLFW_KEY_O: Keypresses[KEY_O] = false; break; case GLFW_KEY_P: Keypresses[KEY_P] = false; break;
+            case GLFW_KEY_Q: Keypresses[KEY_Q] = false; break; case GLFW_KEY_R: Keypresses[KEY_R] = false; break;
+            case GLFW_KEY_S: Keypresses[KEY_S] = false; break; case GLFW_KEY_T: Keypresses[KEY_T] = false; break;
+            case GLFW_KEY_U: Keypresses[KEY_U] = false; break; case GLFW_KEY_V: Keypresses[KEY_V] = false; break;
+            case GLFW_KEY_W: Keypresses[KEY_W] = false; break; case GLFW_KEY_X: Keypresses[KEY_X] = false; break;
+            case GLFW_KEY_Y: Keypresses[KEY_Y] = false; break; case GLFW_KEY_Z: Keypresses[KEY_Z] = false; break;
             case GLFW_KEY_ESCAPE: Keypresses[KEY_ESC] = false; break;
             case GLFW_KEY_SPACE: Keypresses[KEY_SPACE] = false; break;
             case GLFW_KEY_LEFT_SHIFT: Keypresses[KEY_LSHIFT] = false; break;

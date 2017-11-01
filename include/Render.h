@@ -20,9 +20,11 @@ typedef struct Render_t {
 typedef struct Render_t {
     World_t world;
     Scene scene;
+
     HighlightShader hlShader;
-    MaterialShader mShader;
-    ObjShader *oShader;
+    ColorShader cShader;
+    TexShader tShader;
+
     float windowW, windowH;
     bool needsUpdate;
 } Render_t;
@@ -34,23 +36,22 @@ void updateRenderer(Render_t *r, float windowW, float windowH, float seconds, bo
 void render(Render_t *r);
 
 // Scene draw call declarations
-void drawSceneColor(Scene *s, MaterialShader *sh, Vec3 *campos);
-void drawSceneHighlightColor(Scene *s, MaterialShader *sh, Vec3 *campos);
-void drawSceneTexture(Scene *s, GLint uModel, GLint uTexture);
-void drawSceneHighlightTexture(Scene *s, GLint uModel, GLint uTexture);
+void drawSceneColor(Scene *s, ColorShader *sh, Vec3 *cam_pos);
+void drawSceneTexture(Scene *s, TexShader *sh, Vec3 *cam_pos);
+void drawSceneHighlightColor(Scene *s, ColorShader *sh, Vec3 *cam_pos);
+void drawSceneHighlightTexture(Scene *s, TexShader *sh, Vec3 *cam_pos);
 void drawSceneHighlight(Scene *s, GLint uModel);
 
 // RenderList draw call declatations
+void drawColorRenderList(RenderList *rl, ColorShader *sh, Vec3 *cam_pos);
+void drawTextureRenderList(RenderList *rl, TexShader *sh, Vec3 *cam_pos);
 void drawHighlightRenderList(RenderList *rl, GLint uModel);
-void drawTextureRenderList(RenderList *rl, GLint uModel, GLint uTexture);
 void drawDebugColorRenderList(RenderList *rl, GLint uModel, GLint uColor);
-void drawColorRenderList(RenderList *rl, MaterialShader *sh, Vec3 *campos);
 
 // SceneObject draw calls
+void drawColorSceneObject(SceneObject *so, ColorShader *sh, Vec3 *cam_pos);
+void drawTextureSceneObject(SceneObject *so, TexShader *sh, Vec3 *cam_pos);
 void drawHighlightSceneObject(SceneObject *so, GLint uModel);
-void drawTextureSceneObject(SceneObject *so, GLint uModel, GLint uTexture);
-// void drawColorSceneObject(SceneObject *so, GLint uModel, GLint uColor);
-void drawColorSceneObject(SceneObject *so, MaterialShader *sh, Vec3 *campos);
 void drawDebugColorSceneObject(SceneObject *so, GLint uModel, GLint uColor);
 void drawSceneObject(SceneObject *sn, GLint uModel, GLint uColor);
 #endif /* RENDER_H */

@@ -19,8 +19,8 @@
     v.y = b; \
     v.z = c;
 
-void updateDirlightDirection(DirLight_t *dl, float inc);
-void updateDirlightColor(DirLight_t *dl, float inc);
+void updateDirlightDirection(DirLight *dl, float inc);
+void updateDirlightColor(DirLight *dl, float inc);
 
 float *getLightDirection(World_t *w)
 {
@@ -38,6 +38,20 @@ World_t *initWorld(World_t *w)
     VEC3SET(w->dirLight.direction, 0.3f, -1.0f, 1.0f);
     w->dirLight.ambientIntensity = 0.5f;
     w->dirLight.diffuseIntensity = 1.0f;
+
+    w->pointLight.position = (Vec3){ 10.0f, 10.0f, 10.0f };
+    w->pointLight.ambient = (Vec3){ 1.0f, 0.5f, 0.31f };
+    w->pointLight.diffuse = (Vec3){ 1.0f, 0.5f, 0.31f };
+    w->pointLight.specular = (Vec3){ 0.5f, 0.5f, 0.5f };
+    w->pointLight.Kc = 1.0f;
+    w->pointLight.Kl = 0.09f;
+    w->pointLight.Kq = 0.032f;
+
+    w->spotLight.direction = (Vec3){ 0.0f, 10.0f, 0.0f };
+    w->spotLight.ambientIntensity = 1.0f;
+    w->spotLight.diffuseIntensity = 1.0f;
+    w->spotLight.inner_cutoff = 0.91f;
+    w->spotLight.outer_cutoff = 0.2530f;
     return w;
 }
 
@@ -50,7 +64,7 @@ void worldUpdate(World_t *w, float deltaTime)
     updateDirlightColor(&w->dirLight, w->lastTime);
 }
 
-void updateDirlightDirection(DirLight_t *dl, float inc)
+void updateDirlightDirection(DirLight *dl, float inc)
 {
     float cur = cosf(inc);
     float cur2 = (sinf(inc) * 0.5f + 0.5f) * 0.5f;
@@ -58,7 +72,7 @@ void updateDirlightDirection(DirLight_t *dl, float inc)
     dl->direction.z = cur2;
 }
 
-void updateDirlightColor(DirLight_t *dl, float inc)
+void updateDirlightColor(DirLight *dl, float inc)
 {
     float cur = (sinf(inc) * 0.5f + 0.5f) * 0.2f + 0.1f;
     dl->color.x = cur;
