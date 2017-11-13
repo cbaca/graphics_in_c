@@ -5,8 +5,14 @@
 #include <stdio.h>
 
 static void _adjust_arrayLen(Array *a);
+static void _adjust_arrayLen(Array *a)
+{
+    a->max_len *= 2;
+    uint32_t *tmp = realloc(a->data, a->max_len * a->data_size);
+    a->data = tmp;
+}
 
-Array *new_array(size_t start_len, ArrayData_t dataType)
+Array *new_array(size_t start_len, arraydata_t dataType)
 {
     assert(sizeof(double) ==  sizeof(uint64_t));
     assert((sizeof(float) == sizeof(unsigned int)) == (sizeof(int) == sizeof(uint32_t)));
@@ -34,20 +40,32 @@ Array *new_array(size_t start_len, ArrayData_t dataType)
     return a;
 }
 
-void destroy_array(Array *a) { if (a) free(a->data), free(a); }
-
-float *get_array_data_float(Array *a, size_t *len)
+Array *cpy_array(Array *dest, const Array *const src)
 {
-    *len = a->cur_len;
-    float *ret = (float *)a->data;
-    return ret;
+    if (dest->dataType != src->dataType)
+        return NULL;
+
+    if (dest->max_len <= src->data_size) {
+        dest->max_len = src->data_size + 1;
+        void *tmp = realloc(dest->data, dest->max_len * dest->data_size);
+        dest->data = tmp;
+    }
+
+    dest->cur_len = src->cur_len;
+    memcpy(dest->data, src->data, dest->cur_len * dest->data_size);
+    return dest;
 }
 
-unsigned int *get_array_data_uint(Array *a, size_t *len)
+Array *cat_array(Array *dest, const Array *const src)
 {
-    *len = a->cur_len;
-    unsigned int *ret = (unsigned int *)a->data;
-    return ret;
+    assert(dest->dataType == src->dataType);
+    while (dest->max_len <= src->cur_len)
+        _adjust_arrayLen(dest);
+
+    uint32_t *d = ((uint32_t *)dest->data) + dest->cur_len;
+    memcpy(d, src->data, src->cur_len * dest->data_size);
+    dest->cur_len += src->cur_len;
+    return dest;
 }
 
 size_t append_array(Array *a, const void *const data)
@@ -79,16 +97,32 @@ size_t append_arrayVx(Array *a, const void *const data, size_t len)
     return a->cur_len;
 }
 
-Array *cat_array(Array *dest, const Array *const src)
+float *get_array_data_float(Array *a, size_t *len)
 {
-    assert(dest->dataType == src->dataType);
-    while (dest->max_len <= src->cur_len)
-        _adjust_arrayLen(dest);
+    *len = a->cur_len;
+    float *ret = (float *)a->data;
+    return ret;
+}
 
-    uint32_t *d = ((uint32_t *)dest->data) + dest->cur_len;
-    memcpy(d, src->data, src->cur_len * dest->data_size);
-    dest->cur_len += src->cur_len;
-    return dest;
+unsigned int *get_array_data_uint(Array *a, size_t *len)
+{
+    *len = a->cur_len;
+    unsigned int *ret = (unsigned int *)a->data;
+    return ret;
+}
+
+void *get_ptr_at_index(Array *a, const size_t index)
+{
+    if (index >= a->cur_len)
+        return NULL;
+    switch (a->data_size) {
+        case sizeof(uint8_t):  return ((uint8_t  *)a->data) + index;
+        case sizeof(uint16_t): return ((uint16_t *)a->data) + index;
+        case sizeof(uint32_t): return ((uint32_t *)a->data) + index;
+        case sizeof(uint64_t): return ((uint64_t *)a->data) + index;
+        default: break;
+    }
+    return NULL;
 }
 
 void printArray(Array *a, const char *c, size_t stride)
@@ -125,9 +159,4 @@ void printArray(Array *a, const char *c, size_t stride)
     }
 }
 
-static void _adjust_arrayLen(Array *a)
-{
-    a->max_len *= 2;
-    uint32_t *tmp = realloc(a->data, a->max_len * a->data_size);
-    a->data = tmp;
-}
+void destroy_array(Array *a) { if (a) free(a->data), free(a); }

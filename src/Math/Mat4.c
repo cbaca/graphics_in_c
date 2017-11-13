@@ -1,20 +1,20 @@
-#include "Maths.h"
+#include "Mat4.h"
+#include "Vec3.h"
 #include <float.h>
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 
-/*
-matrix: [ x1 y1 z1 w1 ]
-        [ x2 y2 z2 w2 ]
-        [ x3 y3 z3 w3 ]
-        [ x4 y4 z4 w4 ]
-*/
+#define MAT4SET(mat, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15) \
+    mat->data[ 0] =  v0; mat->data[ 1] =  v1; mat->data[ 2] =  v2; mat->data[ 3] =  v3; \
+    mat->data[ 4] =  v4; mat->data[ 5] =  v5; mat->data[ 6] =  v6; mat->data[ 7] =  v7; \
+    mat->data[ 8] =  v8; mat->data[ 9] =  v9; mat->data[10] = v10; mat->data[11] = v11; \
+    mat->data[12] = v12; mat->data[13] = v13; mat->data[14] = v14; mat->data[15] = v15;
 
 static const float IdentityMatrix[16] = { IDENTITY_MATRIX };
 
-__attribute__ ((malloc))
 Mat4 *newMat4(void)
 {
     Mat4 *m = malloc(sizeof(Mat4));
@@ -22,7 +22,11 @@ Mat4 *newMat4(void)
     return m;
 }
 
-void destroyMat4(Mat4 *m) { if (m) free(m); }
+void destroyMat4(Mat4 *m)
+{
+    if (m)
+        free(m);
+}
 
 Mat4 *setMat4(Mat4 *dest, const Mat4 *src)
 {
@@ -38,36 +42,13 @@ Mat4 *setIdentityMat4(Mat4 *mat)
 
 Mat4 *setTranslationMat4(Mat4 *m, const Vec3 *v)
 {
-    float *mat = m->data;
-    mat[ 0] = 1.0f;
-    mat[ 1] = 0.0f;
-    mat[ 2] = 0.0f;
-    mat[ 3] = 0.0f;
-
-    mat[ 4] = 0.0f;
-    mat[ 5] = 1.0f;
-    mat[ 6] = 0.0f;
-    mat[ 7] = 0.0f;
-
-    mat[ 8] = 0.0f;
-    mat[ 9] = 0.0f;
-    mat[10] = 1.0f;
-    mat[11] = 0.0f;
-
-    mat[12] = v->x;
-    mat[13] = v->y;
-    mat[14] = v->z;
-    mat[15] = 1.0f;
+    MAT4SET(m, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, v->x, v->y, v->z, 1.0f);
     return m;
 }
 
 Mat4 *setScaledMat4(Mat4 *mat, const Vec3 *v)
 {
-
-    mat->data[ 0] = v->x; mat->data[ 1] = 0.0f; mat->data[ 2] = 0.0f; mat->data[ 3] = 0.0f;
-    mat->data[ 4] = 0.0f; mat->data[ 5] = v->y; mat->data[ 6] = 0.0f; mat->data[ 7] = 0.0f;
-    mat->data[ 8] = 0.0f; mat->data[ 9] = 0.0f; mat->data[10] = v->z; mat->data[11] = 0.0f;
-    mat->data[12] = 0.0f; mat->data[13] = 0.0f; mat->data[14] = 0.0f; mat->data[15] = 1.0f;
+    MAT4SET(mat, v->x, 0.0f, 0.0f, 0.0f, 0.0f, v->y, 0.0f, 0.0f, 0.0f, 0.0f, v->z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
     return mat;
 }
 
@@ -78,25 +59,9 @@ Mat4 *setScaledFactorMat4(Mat4 *mat, const Vec3 *v, const float k)
     float fxz = fact * v->x * v->z;
     float fyz = fact * v->y * v->z;
 
-    mat->data[ 0] = 1 + fact * v->x * v->x;
-    mat->data[ 1] = fxy;
-    mat->data[ 2] = fxz;
-    mat->data[ 3] = 0.0f;
+    MAT4SET(mat, 1 + fact * v->x * v->x, fxy, fxz, 0.0f, fxy, 1 + fact * v->y * v->y,
+            fyz, 0.0f, fxz, fyz, 1 + fact * v->z * v->z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 
-    mat->data[ 4] = fxy;
-    mat->data[ 5] = 1 + fact * v->y * v->y;
-    mat->data[ 6] = fyz;
-    mat->data[ 7] = 0.0f;
-
-    mat->data[ 8] = fxz;
-    mat->data[ 9] = fyz;
-    mat->data[10] = 1 + fact * v->z * v->z;
-    mat->data[11] = 0.0f;
-
-    mat->data[12] = 0.0f;
-    mat->data[13] = 0.0f;
-    mat->data[14] = 0.0f;
-    mat->data[15] = 1.0f;
     return mat;
 }
 
@@ -489,7 +454,7 @@ void printMat4(Mat4 *m)
     float *d = m->data;
     size_t i;
     for (i = 0; i < 4; ++i) {
-        // printf("%.4lf %.4lf %.4lf %.4lf\n", m->data[0], m->data[1], m->data[2], m->data[3]);
+        printf("%.4lf %.4lf %.4lf %.4lf\n", m->data[0], m->data[1], m->data[2], m->data[3]);
         d+= 4;
     }
 }

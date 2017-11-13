@@ -1,13 +1,21 @@
 #include "meshdata.h"
-// #include "texture.h"
+#include "types.h"
+#include "vecmath.h"
 #include "utils.h"
-#include "Maths.h"
-#include <stdbool.h>
+#include "Array.h"
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+
+typedef struct mesh_arrays_t {
+    Array *vertices;
+    Array *indices;
+    Array *vnormals;
+    Array *fnormals;
+    Array *uvs;
+} mesh_arrays_t;
 
 // global vars
 static size_t num_obj_files = 0;
@@ -22,7 +30,7 @@ static void _genPyramidArrays(void);
 static void _genCubeArrays(void);
 static void _finalizeFilePathData(void);
 static void _finalize_mesh_arrays(mesh_arrays_t *ma);
-static void _calcVertexNormal(Vec3 *A, Vec3 *B, Vec3 *C);
+static void _calc_triangle_surface_normal(Vec3 *restrict A, Vec3 *restrict B, Vec3 *restrict C);
 static void _calcUvs(float dest[2], Vec3 *src);
 
 // definitions
@@ -64,6 +72,7 @@ void printMeshData(meshdata_t *meshdata)
         vLen, uLen, nLen, iLen);
 }
 
+// .obj wavefront
 meshdata_t *genMeshdataFromFile(const char *path, meshdata_t *meshdata)
 {
     if (!checkFileType(path, ".obj")) {
@@ -203,6 +212,60 @@ void printObjFiles(void)
     printStringArray("Object files:", obj_paths, num_obj_files);
 }
 
+#define QUAD_VERTEX_ARRAY_LEN 12
+#define QUAD_NORMAL_ARRAY_LEN 12
+#define QUAD_UV_ARRAY_LEN 8
+#define QUAD_INDEX_ARRAY_LEN 6
+
+float quad_vertex_array[QUAD_VERTEX_ARRAY_LEN] = {
+    -1.f, -1.f, 0.f,
+     1.f, -1.f, 0.f,
+    -1.f,  1.f, 0.f,
+     1.f,  1.f, 0.f
+};
+
+float quad_normal_array[QUAD_NORMAL_ARRAY_LEN] = {
+    0.f, 0.f, -1.f,
+    0.f, 0.f, -1.f,
+    0.f, 0.f, -1.f,
+    0.f, 0.f, -1.f
+};
+
+float quad_uv_array[QUAD_UV_ARRAY_LEN] = {
+    0.f, 1.f,
+    0.f, 0.f,
+    1.f, 1.f,
+    1.f, 0.f
+};
+
+unsigned int quad_index_array[QUAD_INDEX_ARRAY_LEN] = {
+    0, 1, 2, 1, 2, 3
+};
+
+float *get_quad_vertex_array(size_t *len)
+{
+    *len = QUAD_VERTEX_ARRAY_LEN;
+    return quad_vertex_array;
+}
+
+float *get_quad_normal_array(size_t *len)
+{
+    *len = QUAD_NORMAL_ARRAY_LEN;
+    return quad_normal_array;
+}
+
+float *get_quad_uv_array(size_t *len)
+{
+    *len = QUAD_UV_ARRAY_LEN;
+    return quad_uv_array;
+}
+
+unsigned int *get_quad_index_array(size_t *len)
+{
+    *len = QUAD_INDEX_ARRAY_LEN;
+    return quad_index_array;
+}
+
 float *getSphereVertexArray(size_t *len) { return get_array_data_float(sphereArrays.vertices, len); }
 unsigned int *getSphereIndexArray(size_t *len) { return get_array_data_uint(sphereArrays.indices, len); }
 float *getSphereNormalArray(size_t *len) { return get_array_data_float(sphereArrays.vnormals, len); }
@@ -213,10 +276,25 @@ unsigned int *getPyramidIndexArray(size_t *len) { return get_array_data_uint(pyr
 float *getPyramidNormalArray(size_t *len) { return get_array_data_float(pyramidArrays.vnormals, len); }
 float *getPyramidUVArray(size_t *len) { return get_array_data_float(pyramidArrays.uvs, len); }
 
-float *getCubeVertexArray(size_t *len) { return get_array_data_float(cubeArrays.vertices, len); }
-unsigned int *getCubeIndexArray(size_t *len) { return get_array_data_uint(cubeArrays.indices, len); }
-float *getCubeNormalArray(size_t *len) { return get_array_data_float(cubeArrays.vnormals, len); }
-float *getCubeUVArray(size_t *len) { return get_array_data_float(cubeArrays.uvs, len); }
+float *getCubeVertexArray(size_t *len)
+{
+    return get_array_data_float(cubeArrays.vertices, len);
+}
+
+unsigned int *getCubeIndexArray(size_t *len)
+{
+    return get_array_data_uint(cubeArrays.indices, len);
+}
+
+float *getCubeNormalArray(size_t *len)
+{
+    return get_array_data_float(cubeArrays.vnormals, len);
+}
+
+float *getCubeUVArray(size_t *len)
+{
+    return get_array_data_float(cubeArrays.uvs, len);
+}
 
 static void _genSphereArrays(void)
 {
@@ -225,8 +303,8 @@ static void _genSphereArrays(void)
     sphereArrays.indices = new_array(36, ARRAY_UNSIGNED_INT);
     sphereArrays.uvs = new_array(48, ARRAY_FLOAT);
 
-    int64_t v_slices = 6;
-    int64_t h_slices = 6;
+    int64_t v_slices = 32;
+    int64_t h_slices = 32;
     int64_t i, j;
     float theta_inc = 180.0f / (float)v_slices;
     float phi_inc = 360.0f / (float)h_slices;
@@ -239,17 +317,25 @@ static void _genSphereArrays(void)
     float y;
     float x;
     for (j = 0, y = 0.0f; j < v_slices + 1; ++j, ++y) {
+
         float the = y * TO_RAD(theta_inc);
+
         for (i = 0, x = 0.0f; i < h_slices + 1; ++i, ++x) {
+
             float phi = x * TO_RAD(phi_inc);
             float rsthe = radius * sinf(the);
+
             Vec3 ver, nor;
+
+            // Position vertex coords
             ver = nor = (Vec3) { cosf(phi) * rsthe, radius * cosf(the), sinf(phi) * rsthe };
             append_arrayV3(sphereArrays.vertices, &ver);
 
+            // Normal vectors
             vec3normalize(&nor);
             append_arrayV3(sphereArrays.vnormals, &nor);
 
+            // tex coords
             float uv[2] = { phi, 1.0f - the };
             append_arrayVx(sphereArrays.uvs, uv, 2);
 
@@ -279,32 +365,59 @@ static void _genCubeArrays(void)
 {
     cubeArrays.vertices = new_array(72, ARRAY_FLOAT);
     cubeArrays.vnormals = new_array(72, ARRAY_FLOAT);
+    cubeArrays.fnormals = new_array(48, ARRAY_FLOAT);
     cubeArrays.indices = new_array(36, ARRAY_UNSIGNED_INT);
     cubeArrays.uvs = new_array(48, ARRAY_FLOAT);
 
     unsigned int indices[6] = { 0, 2, 1, 2, 3, 1 };
+
     unsigned int vid[6][4] = { { 3, 0, 2, 1 }, { 0, 4, 1, 5 }, { 2, 1, 6, 5 },
                                { 4, 7, 5, 6 }, { 7, 3, 6, 2 }, { 7, 4, 3, 0 } };
-    float norms[6][3] = { {  0.0f,  0.0f,  1.0f }, {  1.0f,  0.0f,  0.0f }, {  0.0f, -1.0f,  1.0f },
-                          {  0.0f,  0.0f, -1.0f }, { -1.0f,  0.0f,  1.0f }, {  0.0f,  1.0f,  1.0f } };
-    float verts[8][3] = {
-        {  1.0f,  1.0f,  1.0f }, {  1.0f, -1.0f,  1.0f }, { -1.0f, -1.0f,  1.0f }, { -1.0f,  1.0f,  1.0f },
-        {  1.0f,  1.0f, -1.0f }, {  1.0f, -1.0f, -1.0f }, { -1.0f, -1.0f, -1.0f }, { -1.0f,  1.0f, -1.0f } };
-    float uvs[4][2] = { { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f } };
+    float corner_verts[8][3] = {
+        {  1.0f,  1.0f,  1.0f },
+        {  1.0f, -1.0f,  1.0f },
+        { -1.0f, -1.0f,  1.0f },
+        { -1.0f,  1.0f,  1.0f },
+
+        {  1.0f,  1.0f, -1.0f },
+        {  1.0f, -1.0f, -1.0f },
+        { -1.0f, -1.0f, -1.0f },
+        { -1.0f,  1.0f, -1.0f }
+    };
+
+    float uvs[4][2] = {
+        { 0.0f, 1.0f },
+        { 1.0f, 1.0f },
+        { 0.0f, 0.0f },
+        { 1.0f, 0.0f }
+    };
 
     size_t i;
     for (i = 0; i < 6; ++i) {
+
         size_t j;
         Vec3 v[4];
-        append_arrayVx(cubeArrays.indices, indices, 6);
-        for (j = 0; j < 6; ++j) indices[j] += 4;
 
-        for (j = 0; j < 4; ++j) {
-            v[j] = (Vec3){ verts[vid[i][j]][0], verts[vid[i][j]][1], verts[vid[i][j]][2] };
+        append_arrayVx(cubeArrays.indices, indices, 6);
+
+        for (j = 0; j < 6; ++j)
+            indices[j] += 4;
+
+        for (j = 0; j < 4; j++) {
+
+            v[j] = vec3construct(corner_verts[vid[i][j]][0], corner_verts[vid[i][j]][1], corner_verts[vid[i][j]][2]);
+
             append_arrayV3(cubeArrays.vertices, &v[j]);
-            append_arrayV3(cubeArrays.vnormals, norms[i]);
             append_arrayVx(cubeArrays.uvs, uvs[j], 2);
         }
+
+        Vec3 n0 = vec3copy(&v[0]);
+        vec3normalVector(&n0, &v[1], &v[2]);
+        vec3normalize(&n0);
+        append_arrayV3(cubeArrays.vnormals, &n0);
+        append_arrayV3(cubeArrays.vnormals, &n0);
+        append_arrayV3(cubeArrays.vnormals, &n0);
+        append_arrayV3(cubeArrays.vnormals, &n0);
     }
 }
 
@@ -328,14 +441,18 @@ static void _genPyramidArrays(void)
     size_t i;
     for (i = 0; i < num_faces; ++i) {
         size_t j = i - 1;
+
         if (j >= num_faces)
             j = num_faces - 1;
+
         Vec3 t, br, bl;
         Vec3 nt, nbr, nbl;
+
         t = nt = (Vec3) { 0.0f, 1.0f, 0.0f };
         br = nbr = (Vec3){ vi[ind[i][0]], vi[ind[i][1]], vi[ind[i][2]] };
         bl = nbl = (Vec3){ vi[ind[j][0]], vi[ind[j][1]], vi[ind[j][2]] };
-        _calcVertexNormal(&nt, &nbr, &nbl);
+
+        _calc_triangle_surface_normal(&nt, &nbr, &nbl);
 
         append_arrayV3(pyramidArrays.vertices, &t);
         append_arrayV3(pyramidArrays.vertices, &br);
@@ -379,25 +496,14 @@ static void _finalize_mesh_arrays(mesh_arrays_t *ma)
     destroy_array(ma->uvs);
 }
 
-static void _calcVertexNormal(Vec3 *A, Vec3 *B, Vec3 *C)
+static void _calc_triangle_surface_normal(Vec3 *restrict A, Vec3 *restrict B, Vec3 *restrict C)
 {
-    Vec3 a, b, c;
-    Vec3 norm, tmp_c;
-
-    vec3set(&a, A);
-    vec3set(&b, B);
-    vec3set(&c, C);
-
-    vec3set(&norm, A);
-    vec3set(&tmp_c, C);
-
-    vec3sub(&tmp_c, &b);
-    vec3sub(&norm, &b);
-    vec3cross(&norm, &tmp_c);
-
-    vec3normalize(vec3add(A, &norm));
-    vec3normalize(vec3add(B, &norm));
-    vec3normalize(vec3add(C, &norm));
+    Vec3 e0 = vec3copySub(C, B);
+    Vec3 e1 = vec3copySub(A, B);
+    e0 = vec3copyCross(&e1, &e0);
+    vec3normalize(vec3add(A, &e0));
+    vec3normalize(vec3add(B, &e0));
+    vec3normalize(vec3add(C, &e0));
 }
 
 static void _calcUvs(float dest[2], Vec3 *src)

@@ -1,8 +1,29 @@
-#include "Maths.h"
+#include "Vec3.h"
 #include <math.h>
 #include <float.h>
 #include <stdlib.h>
-#define DOTVEC3(v, m) (v->x * m->x + v->y * m->y + v->z * m->z)
+#include <stdio.h>
+
+#define _DOTVEC3(v, m) (v->x * m->x + v->y * m->y + v->z * m->z)
+#define _LENVEC3(v) sqrtf(v->x * v->x + v->y * v->y + v->z * v->z)
+#define _MULVEC3SCLR(v, s) v->x *= s; v->y *= s; v->z *= s
+
+// #define _FASI(f) (*((int *) &f))
+// #define _FASUI(f) (*((unsigned int *) &f))
+// #define _LT0(f) (_FASUI(f) > 0x80000000U)
+// #define _LE0(f) (_FASI(f)  <= 0)
+// #define _GT0(f) (_FASI(f)  > 0)
+// #define _GE0(f) (_FASUI(f) <= 0x80000000U)
+
+Vec3 vec3copy(const Vec3 *src)
+{
+    return (Vec3){ src->x, src->y, src->z };
+}
+
+Vec3 vec3construct(const float x, const float y, const float z)
+{
+    return (Vec3){ x, y, z };
+}
 
 Vec3 *vec3set(Vec3 *dest, const Vec3 *src)
 {
@@ -36,24 +57,13 @@ Vec3 *vec3sub(Vec3 *dest, const Vec3 *src)
     return dest;
 }
 
-Vec3 *vec3normalize(Vec3 *v)
+Vec3 *vec3negate(Vec3 *v)
 {
-    float rlen = 1.0f / sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
-    v->x *= rlen;
-    v->y *= rlen;
-    v->z *= rlen;
+    v->x = -v->x; v->y = -v->y; v->z = -v->z;
     return v;
 }
 
-Vec3 *vec3divide(Vec3 *dest, const Vec3 *src)
-{
-    dest->x /= src->x;
-    dest->y /= src->y;
-    dest->z /= src->z;
-    return dest;
-}
-
-Vec3 *vec3multiply(Vec3 *dest, const Vec3 *src)
+Vec3 *vec3mul(Vec3 *dest, const Vec3 *src)
 {
     dest->x *= src->x;
     dest->y *= src->y;
@@ -61,11 +71,11 @@ Vec3 *vec3multiply(Vec3 *dest, const Vec3 *src)
     return dest;
 }
 
-Vec3 *vec3multScalar(Vec3 *dest, float scalar)
+Vec3 *vec3div(Vec3 *dest, const Vec3 *src)
 {
-    dest->x *= scalar;
-    dest->y *= scalar;
-    dest->z *= scalar;
+    dest->x /= src->x;
+    dest->y /= src->y;
+    dest->z /= src->z;
     return dest;
 }
 
@@ -77,43 +87,40 @@ Vec3 *vec3addScalar(Vec3 *dest, float scalar)
     return dest;
 }
 
-Vec3 *rtp_to_xyz(Vec3 *v, float radius, float theta, float phi)
+Vec3 *vec3mulScalar(Vec3 *dest, float scalar)
 {
-    v->x = radius * sinf(phi) * cosf(theta);
-    v->y = radius * sinf(phi) * sinf(theta);
-    v->z = radius * cosf(phi);
+    _MULVEC3SCLR(dest, scalar);
+    return dest;
+}
+
+Vec3 *vec3normalize(Vec3 *v)
+{
+    float rlen = 1.0f / _LENVEC3(v);
+    _MULVEC3SCLR(v, rlen);
     return v;
 }
 
-float vec3length(const Vec3 *v)
+Vec3 *vec3unitDirection(Vec3 *a, const Vec3 *b)
 {
-    return sqrtf(v->x * v->x + v->y * v->y + v->z * v->z);
+    Vec3 dir = vec3copy(b);
+    return vec3set(a, vec3normalize(vec3sub(&dir, a)));
 }
 
-Vec3 *vec3negate(Vec3 *v)
+Vec3 *vec3mulMat4(Vec3 *dest, Mat4 *mat)
 {
-    v->x = -v->x; v->y = -v->y; v->z = -v->z; return v;
+    float a[4] = { dest->x, dest->y, dest->z, 1.0f };
+    return vec3init(dest, a[0] * mat->data[0] + a[1] * mat->data[4] + a[2] * mat->data[ 8] + a[3] * mat->data[12],
+                          a[0] * mat->data[1] + a[1] * mat->data[5] + a[2] * mat->data[ 9] + a[3] * mat->data[13],
+                          a[0] * mat->data[2] + a[1] * mat->data[6] + a[2] * mat->data[10] + a[3] * mat->data[14]);
 }
 
-/**
- * vec3cross
- * @return handle to Vec3 instance
- * @param dest, Vec3 handle which contains the second operand of the cross product,
- *        and will be modified with the result of the cross product.
- * @param src, Vec3 handle which contains the first operand of the cross product.
- *
- * The cross product is also known as directed area product.
- * It can be used to find a vector perpendicular to the operand vectors.
- * One use for this is to calculate surface normal vectors of surfaces.
- *
- * The /magnitude/ of the cross product of two vectors a and b, can
- * can be interpreted as the area of the parallelogram having sides a & b:
- *
- *      ||a x b|| == ||a||*||b||*sin(theta)
- * While dotProduct can be considered a measure of /parallelism/, since the
- * cross product goes by the sin of the angle between its operands,
- * it can be considered a measure of /perpendicularity/.
- */
+Vec3 *vec3normalVector(Vec3 *a, const Vec3 *b, const Vec3 *c)
+{
+    Vec3 v1 = (Vec3){ b->x - a->x, b->y - a->y, b->z - a->z };
+    Vec3 v2 = (Vec3){ c->x - a->x, c->y - a->y, c->z - a->z };
+    return vec3cross(vec3set(a, &v1), &v2);
+}
+
 Vec3 *vec3cross(Vec3 *dest, const Vec3 *src)
 {
     float x = dest->y * src->z - dest->z * src->y;
@@ -123,26 +130,16 @@ Vec3 *vec3cross(Vec3 *dest, const Vec3 *src)
     return dest;
 }
 
-/**
- * Dot product.
- * Get the cosine of two vectors.
- * Also known as the "projection product".
- * ab = ||a||cos(t)
- * ab = a . bhat, bhat is the unit vector of b => b / ||b||
- */
-float vec3dotProduct(const Vec3 *v, const Vec3 *m)
+float vec3dot(const Vec3 *v, const Vec3 *m)
 {
     return v->x * m->x + v->y * m->y + v->z * m->z;
 }
 
-float vec3dot(const Vec3 *v, const Vec3 *m)
+float vec3length(const Vec3 *v)
 {
-    return v->x * m->x + v->y * m->y + v->z * m->z;
-} __attribute__ ((const))
+    return _LENVEC3(v);
+}
 
-/**
- * subtract vectors, and take the length of the difference to get distance between two vectors.
- */
 float vec3distance(const Vec3 *from, const Vec3 *to)
 {
     float x = to->x - from->x;
@@ -151,19 +148,61 @@ float vec3distance(const Vec3 *from, const Vec3 *to)
     return sqrtf(x*x + y*y + z*z);
 }
 
-Vec3 *vec3unitDirection(Vec3 *a, const Vec3 *b)
+Vec3 vec3copyMulScalar(const Vec3 *a, const float s)
 {
-    Vec3 dir;
-    return vec3set(a, vec3normalize(vec3sub(vec3set(&dir, b), a)));
+    return vec3construct(a->x * s, a->y * s, a->z * s);
+}
+
+Vec3 vec3copyAdd(const Vec3 *a, const Vec3 *b)
+{
+    return vec3construct(a->x + b->x, a->y + b->y, a->z + b->z);
+}
+
+Vec3 vec3copySub(const Vec3 *a, const Vec3 *b)
+{
+    return vec3construct(a->x - b->x, a->y - b->y, a->z - b->z);
+}
+
+Vec3 vec3copyCross(const Vec3 *a, const Vec3 *b)
+{
+    return vec3construct(a->y * b->z - a->z * b->y,
+                         a->z * b->x - a->x * b->z,
+                         a->x * b->y - a->y * b->x);
 }
 
 bool areOrthogonal(const Vec3 *a, const Vec3 *b)
 {
-    return DOTVEC3(a, b) == 0.0f;
+    return _DOTVEC3(a, b) == 0.0f;
 }
 
 // https://cadxfem.org/inf/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
-Vec3 *ray_and_plane_intersection(Vec3 *ray, Vec3 *raydir, Vec3 *v0, Vec3 *v1, Vec3 *v2)
+Vec3 *ray_plane_intersection(Vec3 *ret, const Vec3 *ray, const Vec3 *raydir, const Vec3 *v[3])
+{
+    Vec3 e0, e1, p, t, q;
+    float det;
+
+    vec3sub(vec3set(&e0, v[1]), v[0]);
+    vec3sub(vec3set(&e1, v[2]), v[0]);
+    vec3cross(vec3set(&p, raydir), &e1);
+
+    det = vec3dot(&p, &e1);
+
+    if (det < 0.000001f) return NULL;
+
+    ret->y = vec3dot(&p, vec3sub(vec3set(&t, ray), v[0]));
+
+    if (_LT0(ret->y) || ret->y > det) return NULL;
+
+    ret->x = vec3dot(raydir, vec3cross(vec3set(&q, &t), &e0));
+
+    if (_LT0(ret->x) || ret->x + ret->y > det) return NULL;
+
+    ret->z = vec3dot(&q, &e1);
+
+    return vec3multScalar(ret, 1.0f / det);
+}
+
+Vec3 *ray_and_plane_intersection(Vec3 *ret, const Vec3 *ray, const Vec3 *raydir, const Vec3 *v0, const Vec3 *v1, const Vec3 *v2)
 {
     Vec3 e0, e1, p, t, q;
     float det;
@@ -177,17 +216,19 @@ Vec3 *ray_and_plane_intersection(Vec3 *ray, Vec3 *raydir, Vec3 *v0, Vec3 *v1, Ve
 
     if (det < 0.000001f) return NULL;
 
-    ray->y = vec3dot(&p, vec3sub(vec3set(&t, ray), v0));
+    ret->y = vec3dot(&p, vec3sub(vec3set(&t, ray), v0));
 
-    if (ray->y < 0.0f || ray->y > det) return NULL;
+    // if (ret->y < 0.0f || ret->y > det) return NULL;
+    if (_LT0(ret->y) || ret->y > det) return NULL;
 
-    ray->x = vec3dot(raydir, vec3cross(vec3set(&q, &t), &e0));
+    ret->x = vec3dot(raydir, vec3cross(vec3set(&q, &t), &e0));
 
-    if (ray->x < 0.0f || ray->x + ray->y > det) return NULL;
+    // if (ret->x < 0.0f || ret->x + ret->y > det) return NULL;
+    if (_LT0(ret->x) || ret->x + ret->y > det) return NULL;
 
-    ray->z = vec3dot(&q, &e1);
+    ret->z = vec3dot(&q, &e1);
 
-    return vec3multScalar(ray, 1.0f / det);
+    return vec3multScalar(ret, 1.0f / det);
 
     // Vec3 t, q;
     // if (det > -0.000001f && det < 0.000001f) return 0;
@@ -218,22 +259,15 @@ bool vectorAndPlaneIntersection(Vec3 *ret, Vec3 *point_on_plane, Vec3 *plane_nor
     Vec3  diff;
 
     vec3sub(vec3set(&diff, point_on_plane), lv0); // point on plane - line vertex 0
-    t0 = vec3dotProduct(plane_normal, &diff); // plane normal X diff
+    t0 = vec3dot(plane_normal, &diff); // plane normal X diff
 
-    t1 = vec3dotProduct(plane_normal, &unitdir);
+    t1 = vec3dot(plane_normal, &unitdir);
 
     Vec3 point_of_intersection = (Vec3){ lv0->x + t0 * unitdir.x / t1,
                                          lv0->y + t0 * unitdir.y / t1,
                                          lv0->z + t0 * unitdir.z / t1  };
     vec3set(ret, &point_of_intersection);
     return true;
-}
-
-Vec3 *vec3normalVector(Vec3 *a, const Vec3 *b, const Vec3 *c)
-{
-    Vec3 v1 = (Vec3){ b->x - a->x, b->y - a->y, b->z - a->z };
-    Vec3 v2 = (Vec3){ c->x - a->x, c->y - a->y, c->z - a->z };
-    return vec3cross(vec3set(a, &v1), &v2);
 }
 
 Vec3 *vec3projectPoint(Vec3 *pos, float dist, Vec3 *norm)
@@ -277,6 +311,29 @@ void vec3computeLineCoefficients(float ret[4], Vec3 *p0, Vec3 *p1, Vec3 *p2)
     ret[2] = n.z;
     ret[3] = vec3dotProduct(vec3negate(&n), p0);
 }
+
+Vec3 *rtp_to_xyz(Vec3 *v, float radius, float theta, float phi)
+{
+    v->x = radius * sinf(phi) * cosf(theta);
+    v->y = radius * sinf(phi) * sinf(theta);
+    v->z = radius * cosf(phi);
+    return v;
+}
+
+void vec3print(Vec3 *v)
+{
+    printf("%.2f %.2f %.2f\n", v->x, v->y, v->z);
+}
+
+// void variance()
+// {
+    // int mu = 0; for (i = 0; i < N; ++i) mu += x[i]; mu /= N;
+    // int sum = 0; for (i : N) sum += ((x[i] - mu) * (x[i] - mu)); sum /= N;
+    //  variance = sqrtf(sum);
+    //
+    // int sum = 0; for (i : N) sum += x[i];
+    // variance = sqrtf((sum - (mu * mu)) / N);
+// }
 
 // Vec3 *vec3scalarTripleProduct(Vec3 *a, const Vec3 *b, const Vec3 *c)
 // {

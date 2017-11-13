@@ -1,44 +1,60 @@
-NAME = aa
-CC  = gcc
-GDB = gdb
+CC      = gcc
+GDB     = gdb
+TARGET  = aa
+SRCDIR  = src
+INCDIR  = inc
+TSTDIR  = test
+OBJDIR  = objs
+DEPDIR  = deps
 
-vpath %.c src src/Math src/Scene src/local
+vpath %.c src src/Math src/local
 
-FLAGS = -std=gnu11
+CPPFLAGS = -std=gnu11 -Wl,--build-id=sha1 -g -v
+DEPOPTS  = -MMD -MF $(DEPDIR)/$(*F).d
 
-PPFLAGS = -Wl,--build-id=sha1
+WARNINGS = -Wall -Werror -Wshadow -Wextra \
+           -Wundef -Wpointer-arith \
+           -Wcast-align -Wwrite-strings \
+           -Wconversion -Wunreachable-code
 
-WARNINGS := -Werror -Wall -Wshadow -Wextra -Wundef -Wpointer-arith\
--Wcast-align -Wwrite-strings -Wconversion -Wunreachable-code
+LIBS = -lGL -lGLEW -lglfw \
+       -lSOIL -lglut -lGLU \
+       -lm
 
-LIBS = -lGL -lGLEW -lglfw -lm -lSOIL
-LIBS += -lglut -lGLU
 
-INC = -I ./include -I ./include/Math -I ./include/Scene
+INC  = -I ./inc -I ./inc/Math
 
-OBJ_DIR = objs
+SRCS = main.c loop.c backend.c Shader.c \
+       Render.c BufferData.c World.c \
+       Camera.c Frustum.c Vec3.c Mat4.c \
+       SceneObject.c RenderList.c Scene.c \
+       shaderdata.c utils.c meshdata.c \
+       texture.c Array.c
 
-SRCS = main.c Shader.c Render.c Backend.c BufferData.c World.c
-SRCS += Camera.c Frustum.c
-SRCS += Vec3.c Mat4.c
-SRCS += SceneObject.c RenderList.c Scene.c
-SRCS += utils.c meshdata.c texture.c Array.c
+OBJS = $(addprefix $(OBJDIR)/,$(SRCS:.c=.o))
+DEPS = $(addprefix $(DEPDIR)/,$(SRCS:.c=.d))
 
-OBJS = $(addprefix $(OBJ_DIR)/,$(SRCS:.c=.o))
+all: proj
 
-all:$(NAME)
+-include $(DEPS)
 
-$(NAME):$(OBJS)
-	$(CC) -o $@ $^ $(LIBS) -g
+proj: $(TARGET)
+
+dirs:
+	mkdir -p $(OBJDIR) $(DEPDIR)
+	touch $(OBJDIR) $(DEPDIR)
+
+$(TARGET):  $(OBJS)
+	$(CC) $(CPPFLAGS) -o $@ $^ $(LIBS)
 	@echo compilation successful af
 
-$(OBJ_DIR)/%.o:%.c
-	$(CC) $(FLAGS) $(WARNINGS) -c $^ -o $@ $(INC) -g
+$(OBJDIR)/%.o: %.c dirs
+	$(CC) $(CPPFLAGS) $(WARNINGS) -c $< -o $@ $(DEPOPTS) $(INC)
+
+Mat4.s: Mat4.c
+	$(CC) -O $(CPPFLAGS) $(WARNINGS) -S -fverbose-asm -masm=intel -o $@ $(INC) $<
 
 .PHONY: clean
 clean:
-	$(RM) $(NAME) *.o *.s $(OBJ_DIR)/*.o
-
-#asm.s:main.c
-#	$(CC) -S -fverbose-asm -o $@ $(FLAGS) $<
-
+	rm -rf $(OBJDIR) $(DEPDIR)
+	$(RM) $(TARGET) *.o

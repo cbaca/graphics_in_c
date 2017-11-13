@@ -2,14 +2,14 @@
 #define LOCALCAMERA_H
 #include "Camera.h"
 
-Camera_t *_cameraInit(Camera_t *c, Vec3 *pos, float x, float y);
+Camera *_cameraInit(Camera *c, Vec3 *pos, float x, float y);
 
-void _cameraMoveForward(Camera_t *c);
-void _cameraMoveBackward(Camera_t *c);
-void _cameraMoveLeft(Camera_t *c);
-void _cameraMoveRight(Camera_t *c);
-void _cameraMoveDown(Camera_t *c);
-void _cameraMoveUp(Camera_t *c);
+void _cameraMoveForward(Camera *c);
+void _cameraMoveBackward(Camera *c);
+void _cameraMoveLeft(Camera *c);
+void _cameraMoveRight(Camera *c);
+void _cameraMoveDown(Camera *c);
+void _cameraMoveUp(Camera *c);
 
 void _camD_callback(void *c);
 void _camU_callback(void *c);

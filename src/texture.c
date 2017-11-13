@@ -118,12 +118,44 @@ void insertTexture(const char *path)
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgdata);
     glGenerateMipmap(GL_TEXTURE_2D);
+
     SOIL_free_image_data(imgdata);
     ta.texture[ta.num_textures] = malloc(sizeof(Texture));
     ta.texture[ta.num_textures]->tex = texture;
     ta.texture[ta.num_textures]->activeTexture = GL_TEXTURE0 + (GLenum)ta.num_textures;
     ta.texture[ta.num_textures]->index = (GLint)ta.num_textures;
     ta.num_textures++;
+}
+
+size_t insertBufferTexture(GLuint *tex, int width, int height)
+{
+    if (ta.num_textures == ta.max_textures) {
+        fprintf(stderr, "Texture limit maxed\n");
+        return 0;
+    }
+
+    GLuint texture;
+
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0 + (GLenum)ta.num_textures);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, (void *)0);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    size_t ret = ta.num_textures;
+    *tex = texture;
+
+    ta.texture[ta.num_textures] = malloc(sizeof(Texture));
+    ta.texture[ta.num_textures]->tex = texture;
+    ta.texture[ta.num_textures]->activeTexture = GL_TEXTURE0 + (GLenum)ta.num_textures;
+    ta.texture[ta.num_textures]->index = (GLint)ta.num_textures;
+    ta.num_textures++;
+
+    return ret;
 }
 
 static void _initTexPaths(const char *dir_path)

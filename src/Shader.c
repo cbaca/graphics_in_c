@@ -1,25 +1,12 @@
 
 #include "Shader.h"
 #include "utils.h"
+#include "types.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
 #include <assert.h>
-
-#define TEX_VSHADER_PATH "shaders/texture_vshader.glsl"
-#define TEX_FSHADER_PATH "shaders/texture_fshader.glsl"
-#define COLOR_VSHADER_PATH "shaders/color_vshader.glsl"
-#define COLOR_FSHADER_PATH "shaders/color_fshader.glsl"
-#define HL_VSHADER_PATH "shaders/highlight_vshader.glsl"
-#define HL_FSHADER_PATH "shaders/highlight_fshader.glsl"
-#define PICKING_VSHADER_PATH "shaders/picking_vshader.glsl"
-#define PICKING_FSHADER_PATH "shaders/picking_fshader.glsl"
-
-#define SET_MATRIX_UNI(s,p) \
-    s->uModel = glGetUniformLocation(p, "uModel"); \
-    s->uView = glGetUniformLocation(p, "uView"); \
-    s->uProjection = glGetUniformLocation(p, "uProjection");
 
 #define SET_DIRLIGHT_UNI(s,p) \
     s->uDirLight.color = glGetUniformLocation(p, "uDirLight.color"); \
@@ -50,150 +37,12 @@
     s->uPointLight.Kq = glGetUniformLocation(p, "uPointLight.Kq");
 
 #define SET_POS_UNI(s,p) \
-    s->uWorldPos = glGetUniformLocation(p, "uWorldPos"); \
     s->uCamPos = glGetUniformLocation(p, "uCamPos");
 
-static char **shader_paths;
-static size_t num_shader_files;
-
-static GLuint _compileShader(const char *const *vShaderText, const char *const *fShaderText, int *err);
-
-int initShaderData(const char *dirpath)
-{
-    shader_paths = readDirFiles(dirpath, &num_shader_files);
-    if (!shader_paths)
-        return 0;
-    sortStringArray(shader_paths, num_shader_files);
-    return 1;
-}
-
-void printShaderFiles(void)
-{
-    printStringArray("Shader files:", shader_paths, num_shader_files);
-}
-
-void destroyShaderData(void)
-{
-    size_t i;
-    for (i = 0; i < num_shader_files; ++i)
-        free(shader_paths[i]);
-    free(shader_paths);
-}
-
-ColorShader *initColorShader(ColorShader *s)
-{
-    const char vpath[] = COLOR_VSHADER_PATH;
-    const char fpath[] = COLOR_FSHADER_PATH;
-
-    Program_t program = compileShaderFromSource(vpath, fpath);
-    if (!program) return NULL;
-    s->aPosition = 0;
-    s->aNormals = 1;
-
-    SET_MATRIX_UNI(s, program);
-    SET_POS_UNI(s, program);
-    SET_MATERIAL_UNI(s, program);
-    SET_DIRLIGHT_UNI(s, program);
-    SET_SPOTLIGHT_UNI(s, program);
-    SET_POINTLIGHT_UNI(s, program);
-    s->uColor = glGetUniformLocation(program, "uColor");
-
-    s->program = program;
-    s->st = COLOR_SHADER;
-    return s;
-}
-
-TexShader *initTexShader(TexShader *s)
-{
-    const char vpath[] = TEX_VSHADER_PATH;
-    const char fpath[] = TEX_FSHADER_PATH;
-
-    Program_t program = compileShaderFromSource(vpath, fpath);
-    if (!program) return NULL;
-    s->aPosition = 0;
-    s->aNormals = 1;
-
-    SET_MATRIX_UNI(s, program);
-    SET_POS_UNI(s, program);
-    SET_MATERIAL_UNI(s, program);
-    SET_DIRLIGHT_UNI(s, program);
-    SET_SPOTLIGHT_UNI(s, program);
-    SET_POINTLIGHT_UNI(s, program);
-
-    s->aUVs = 2;
-    s->uTexture = glGetUniformLocation(program, "uTexture");
-
-    s->program = program;
-    s->st = TEX_SHADER;
-    return s;
-}
-
-HighlightShader *initHighlightShader(HighlightShader *s)
-{
-    const char vpath[] = HL_VSHADER_PATH;
-    const char fpath[] = HL_FSHADER_PATH;
-    s->program = compileShaderFromSource(vpath, fpath);
-    if (!s->program) return NULL;
-    s->st = HIGHLIGHT_SHADER;
-    s->aPosition = 0;
-    Program_t program = s->program;
-    SET_MATRIX_UNI(s, program);
-    s->uTime = glGetUniformLocation(program, "uTime");
-    s->uResolution = glGetUniformLocation(program, "uResolution");
-    return s;
-}
-
-
-PickingShader *pickingShaderInit(PickingShader *s)
-{
-    const char vpath[] = PICKING_VSHADER_PATH;
-    const char fpath[] = PICKING_FSHADER_PATH;
-    s->program = compileShaderFromSource(vpath, fpath);
-    if (!s->program) return 0;
-    s->aPosition = 0;
-    Program_t program = s->program;
-
-    SET_MATRIX_UNI(s, program);
-    s->uColor = glGetUniformLocation(program, "uColor");
-    s->st = PICKING_SHADER;
-    return s;
-}
-
-Program_t compileShaderFromSource(const char *vpath, const char *fpath)
-{
-    assert(vpath != NULL);
-    assert(fpath != NULL);
-    long int vfilesize;
-    long int ffilesize;
-    char *vShaderTextBuffer = readBinaryFile(vpath, &vfilesize);
-    if (!vShaderTextBuffer) {
-        perror("_readBinaryFile");
-        fprintf(stderr, "%s\n%s\n", vpath, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    char *fShaderTextBuffer = readBinaryFile(fpath, &ffilesize);
-    if (!fShaderTextBuffer) {
-        perror("_readBinaryFile");
-        fprintf(stderr, "%s\n%s\n", fpath, strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    const char *vShaderText[] = { vShaderTextBuffer };
-    const char *fShaderText[] = { fShaderTextBuffer };
-
-    int err;
-    Program_t program = _compileShader(vShaderText, fShaderText, &err);
-    if (err) {
-        if (err == 1)
-            printFileError(vfilesize, vpath, vShaderTextBuffer);
-        else if (err == 2)
-            printFileError(ffilesize, fpath, fShaderTextBuffer);
-        return 0;
-    }
-    if (vShaderTextBuffer) free(vShaderTextBuffer);
-    if (fShaderTextBuffer) free(fShaderTextBuffer);
-    return program;
-}
+program_t _compileShaderFromText(const char *vtext, const char *ftext);
+GLuint _handleShaderCompileError(GLuint fd, GLuint instance);
+char *_eval_shader_text(const char *path);
+static GLuint _compile_shader(const char *const *vShaderText, const char *const *fShaderText, int *err);
 
 GLuint _handleShaderCompileError(GLuint fd, GLuint instance)
 {
@@ -219,7 +68,7 @@ GLuint _handleShaderCompileError(GLuint fd, GLuint instance)
     return 0;
 }
 
-static GLuint _compileShader(const char *const *vShaderText, const char *const *fShaderText, int *err)
+static GLuint _compile_shader(const char *const *vShaderText, const char *const *fShaderText, int *err)
 {
     int shaderCompileSuccess;
     GLuint program;
@@ -265,7 +114,232 @@ static GLuint _compileShader(const char *const *vShaderText, const char *const *
     return program;
 }
 
-void shaderUse(BaseShader *s)
+char *_eval_shader_text(const char *path)
 {
-    glUseProgram(s->program);
+    long int filelen;
+    char *text = readBinaryFile(path, &filelen);
+    char *inc = strstr(text, "#include");
+
+    if (!inc)
+        return text;
+    if (*(inc - 1) != ' ' && *(inc - 1) != '\n')
+        return text;
+
+    long int len;
+    long int filelen2;
+    long int header_len;
+    char *inc2 = nil;
+    char *del = nil;
+    char *text2 = nil;
+    char *ret = nil;
+    char pathbuf[100];
+
+    inc = index(inc, '\"');
+    inc2 = index(inc + 1, '\"');
+    len = inc2 - inc - 1;
+    inc += 1;
+    strcpy(pathbuf, path);
+
+    del = index(pathbuf, '/') + 1;
+    strncpy(del, inc, (size_t)len);
+    del[len] = '\0';
+    text2 = readBinaryFile(pathbuf, &filelen2);
+    ret = malloc((size_t)filelen2 + (size_t)filelen + sizeof(char));
+    header_len = strstr(text, "#include") - text;
+    strncpy(ret, text, (size_t)header_len);
+    ret[header_len++] = '\n';
+    ret[header_len++] = '\0';
+    strcat(ret, text2);
+    strcat(ret, inc2 + 1);
+    free(text);
+    free(text2);
+    return ret;
+
 }
+
+program_t _compileShaderFromText(const char *vtext, const char *ftext)
+{
+    assert(vtext != NULL);
+    assert(ftext != NULL);
+    const char *vShaderText[] = { vtext };
+    const char *fShaderText[] = { ftext };
+
+    int err;
+    program_t program = _compile_shader(vShaderText, fShaderText, &err);
+    if (!err)
+        return program;
+
+    if (err == 1) {
+        fprintf(stderr, "vshader text:\n\n%s\n", vtext);
+        return 0;
+    }
+    if (err == 2) {
+        fprintf(stderr, "fshader text:\n\n%s\n", ftext);
+        return 0;
+    }
+    return 0;
+}
+
+ToyShader *_init_toy_shader(ToyShader *s, const char *vpath, const char *fpath)
+{
+    s->program = compileShaderFromSource(vpath, fpath);
+    if (!s->program) return nil;
+    s->aPosition = 0;
+    s->uTexture = glGetUniformLocation(s->program, "uTexture");
+    s->uTime = glGetUniformLocation(s->program, "uTime");
+    s->uResolution = glGetUniformLocation(s->program, "uResolution");
+    s->uMouse = glGetUniformLocation(s->program, "uMouse");
+    if (s->st & MVP_UNIFORM) {
+        s->uModel = glGetUniformLocation(s->program, "uModel");
+        s->uMatrices = glGetUniformBlockIndex(s->program, "uMatrices");
+        return s;
+    }
+    s->uModel = -1;
+    s->uMatrices = 0;
+    return s;
+}
+
+LightingShader *_init_lighting_shader(LightingShader *s, const char *vpath, const char *fpath)
+{
+    char *vtext = _eval_shader_text(vpath);
+    char *ftext = _eval_shader_text(fpath);
+    s->program = _compileShaderFromText(vtext, ftext);
+    if (!s->program) return NULL;
+    s->aPosition = 0;
+    s->aNormals = 1;
+
+    s->uModel = glGetUniformLocation(s->program, "uModel");
+    s->uMatrices = glGetUniformBlockIndex(s->program, "uMatrices");
+    glUniformBlockBinding(s->program, s->uMatrices, 0);
+    SET_POS_UNI(s, s->program);
+    SET_MATERIAL_UNI(s, s->program);
+    SET_DIRLIGHT_UNI(s, s->program);
+    SET_SPOTLIGHT_UNI(s, s->program);
+    SET_POINTLIGHT_UNI(s, s->program);
+    s->a0 = 2;
+    if (s->st & UV_ATTRIB)
+        s->u0 = glGetUniformLocation(s->program, "uTexture");
+    else
+        s->u0 = glGetUniformLocation(s->program, "uColor");
+    return s;
+
+}
+
+LightingShader *init_texture_shader(LightingShader *s)
+{
+    s->st = MVP_UNIFORM | NORMALS_ATTRIB | UV_ATTRIB | LIGHTING_SHADER;
+    return _init_lighting_shader(s, "shaders/texture_vshader.glsl", "shaders/texture_fshader.glsl");
+}
+
+LightingShader *init_color_shader(LightingShader *s)
+{
+    s->st = MVP_UNIFORM | NORMALS_ATTRIB | LIGHTING_SHADER;
+    return _init_lighting_shader(s, "shaders/color_vshader.glsl", "shaders/color_fshader.glsl");
+}
+
+ToyShader *init_marching_shader(ToyShader *s)
+{
+    s->st = BASIC_SHADER | MARCHING_SHADER;
+    return _init_toy_shader(s, "shaders/basic_vshader.glsl", "shaders/marching_fshader.glsl");
+}
+
+ToyShader *init_tunnel_shader(ToyShader *s)
+{
+    s->st = BASIC_SHADER | TUNNEL_SHADER;
+    return _init_toy_shader(s, "shaders/basic_vshader.glsl", "shaders/tunnel_fshader.glsl");
+}
+
+ToyShader *init_highlight_shader(ToyShader *s)
+{
+    s->st = MVP_UNIFORM | WAVES_SHADER;
+    return _init_toy_shader(s, "shaders/mvp_vshader.glsl", "shaders/waves_fshader.glsl");
+}
+
+program_t compileShaderFromSource(const char *vpath, const char *fpath)
+{
+    assert(vpath != NULL);
+    assert(fpath != NULL);
+    long int vfilesize;
+    long int ffilesize;
+    char *vShaderTextBuffer = readBinaryFile(vpath, &vfilesize);
+    if (!vShaderTextBuffer) {
+        perror("_readBinaryFile");
+        fprintf(stderr, "%s\n%s\n", vpath, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    char *fShaderTextBuffer = readBinaryFile(fpath, &ffilesize);
+    if (!fShaderTextBuffer) {
+        perror("_readBinaryFile");
+        fprintf(stderr, "%s\n%s\n", fpath, strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    const char *vShaderText[] = { vShaderTextBuffer };
+    const char *fShaderText[] = { fShaderTextBuffer };
+
+    int err;
+    program_t program = _compile_shader(vShaderText, fShaderText, &err);
+    if (err) {
+        if (err == 1)
+            printFileError(vfilesize, vpath, vShaderTextBuffer);
+        else if (err == 2)
+            printFileError(ffilesize, fpath, fShaderTextBuffer);
+        return 0;
+    }
+    if (vShaderTextBuffer) free(vShaderTextBuffer);
+    if (fShaderTextBuffer) free(fShaderTextBuffer);
+    return program;
+}
+
+void setMaterialUniforms(MaterialUniforms *mu, Material *ma)
+{
+    glUniform3fv(mu->ambient, 1, (float *)&ma->ambient);
+    glUniform3fv(mu->diffuse, 1, (float *)&ma->diffuse);
+    glUniform3fv(mu->specular, 1, (float *)&ma->specular);
+    glUniform1f(mu->shininess, ma->shininess);
+}
+
+void setLightUniforms(LightUniforms *lu, DirLight *dl)
+{
+    glUniform3fv(lu->color, 1, (float *)&dl->color);
+    glUniform3fv(lu->direction, 1, (float *)&dl->direction);
+    glUniform1f(lu->ambientIntensity, dl->ambientIntensity);
+    glUniform1f(lu->diffuseIntensity, dl->diffuseIntensity);
+}
+
+void setSpotLightUniforms(SpotLightUniforms *su, SpotLight *sl)
+{
+    glUniform3fv(su->direction, 1, (float *)&sl->direction);
+    glUniform1f(su->ambientIntensity, sl->ambientIntensity);
+    glUniform1f(su->diffuseIntensity, sl->diffuseIntensity);
+    glUniform1f(su->inner_cutoff, sl->inner_cutoff);
+    glUniform1f(su->outer_cutoff, sl->outer_cutoff);
+}
+
+void setPointLightUniforms(PointLightUniforms *pu, PointLight *pl)
+{
+    glUniform3fv(pu->position, 1, (float *)&pl->position);
+    glUniform3fv(pu->ambient, 1, (float *)&pl->ambient);
+    glUniform3fv(pu->diffuse, 1, (float *)&pl->diffuse);
+    glUniform3fv(pu->specular, 1, (float *)&pl->specular);
+    glUniform1f(pu->Kc, pl->Kc);
+    glUniform1f(pu->Kl, pl->Kl);
+    glUniform1f(pu->Kq, pl->Kq);
+}
+
+/*
+PickingShader *pickingShaderInit(PickingShader *s)
+{
+    const char vpath[] = PICKING_VSHADER_PATH;
+    const char fpath[] = PICKING_FSHADER_PATH;
+    s->program = compileShaderFromSource(vpath, fpath);
+    if (!s->program) return 0;
+    s->aPosition = 0;
+    program_t program = s->program;
+
+    SET_MATRIX_UNI(s, program);
+    s->uColor = glGetUniformLocation(program, "uColor");
+    s->st = PICKING_SHADER;
+    return s;
+}
+*/

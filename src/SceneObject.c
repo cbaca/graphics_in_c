@@ -1,14 +1,17 @@
 
 #include "SceneObject.h"
 #include "texture.h"
+#include "vecmath.h"
 #include <stdio.h>
 #include <math.h>
 
-static SceneObject *_initSceneObject(SceneObject *sn, BufferData *data);
+static SceneObject *_initSceneObject(SceneObject *sn, const BufferData *data);
 
-SceneObject *newSceneObject(BufferData *data)
+SceneObject *newSceneObject(const BufferData *data)
 {
     SceneObject *sn = malloc(sizeof(SceneObject));
+    sn->permanent = no;
+    sn->name = NULL;
     return _initSceneObject(sn, data);
 }
 
@@ -23,7 +26,8 @@ SceneObject *newSceneObjectFromSceneObject(SceneObject *src)
     vec3set(&sn->position, &src->position);
     vec3set(&sn->scale, &src->scale);
     vec3set(&sn->color, &src->color);
-    sn->permanent = false;
+    sn->permanent = no;
+    sn->name = NULL;
 
     return sn;
 }
@@ -33,6 +37,8 @@ void destroySceneObject(SceneObject *sn)
     destroyMat4(sn->modelMatrix);
     destroyMat4(sn->worldMatrix);
     destroyMat4(sn->drawMatrix);
+    if (sn->name != NULL)
+        free(sn->name);
 }
 
 void calcBoundingRadius(SceneObject *sn)
@@ -41,64 +47,10 @@ void calcBoundingRadius(SceneObject *sn)
     sn->boundingRadius = vec3length(&sn->scale);
 }
 
-/*
-void drawHighlightSceneObject(SceneObject *so, GLint uModel)
-{
-    Mat4 m;
-    Vec3 scl = (Vec3){1.1f, 1.1f, 1.1f};
-    setMat4(&m, so->drawMatrix);
-    scaleMat4(&m, &scl);
-    glUniformMatrix4fv(uModel, 1, GL_FALSE, m.data);
-    glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-}
-
-void drawTextureSceneObject(SceneObject *so, GLint uModel, GLint uTexture)
-{
-    glActiveTexture(so->activeTexture);
-    glBindTexture(GL_TEXTURE_2D, so->texture);
-    glUniform1i(uTexture, so->textureIndex);
-    glUniformMatrix4fv(uModel, 1, GL_FALSE, so->drawMatrix->data);
-    glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-// void drawColorSceneObject(SceneObject *so, GLint uModel, GLint uColor)
-void drawColorSceneObject(SceneObject *so, MaterialShader *sh, Vec3 *campos)
-{
-
-    glUniform3fv(sh->uMaterial.ambient, 1, (float *)&so->material.ambient);
-    glUniform3fv(sh->uMaterial.diffuse, 1, (float *)&so->material.diffuse);
-    glUniform3fv(sh->uMaterial.specular, 1, (float *)&so->material.specular);
-    glUniform3fv(sh->uCamPos, 1, (float *)campos);
-    glUniform3fv(sh->uWorldPos, 1, (float *)&so->position);
-    glUniform1f(sh->uMaterial.shininess, so->material.shininess);
-
-    // glUniform3fv(uColor, 1, (float *)&so->color);
-    glUniformMatrix4fv(sh->uModel, 1, GL_FALSE, so->drawMatrix->data);
-    glDrawElements(GL_TRIANGLES, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-}
-
-void drawDebugColorSceneObject(SceneObject *so, GLint uModel, GLint uColor)
-{
-    glUniform3fv(uColor, 1, (float *)&so->color);
-    glUniformMatrix4fv(uModel, 1, GL_FALSE, so->drawMatrix->data);
-    // glDrawElements(GL_TRIANGLES, sn->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-    glDrawElements(GL_POINTS, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-    glDrawElements(GL_LINE_LOOP, so->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-}
-
-void drawSceneObject(SceneObject *sn, GLint uModel, GLint uColor)
-{
-    glUniform3fv(uColor, 1, (float *)&sn->color);
-    glUniformMatrix4fv(uModel, 1, GL_FALSE, sn->drawMatrix->data);
-    glDrawElements(GL_TRIANGLES, sn->bufferData->elementCount, GL_UNSIGNED_INT, 0);
-}
-*/
-
 void updateObjectDistFromCam(SceneObject *sn, Vec3 *camPos)
 {
-    Vec3 p = (Vec3){sn->position.x, sn->position.y, sn->position.z};
-    sn->distFromCam = vec3dotProduct(&p, camPos);
+    Vec3 p = vec3copy(&sn->position);
+    sn->distFromCam = vec3dot(&p, camPos);
 }
 
 void setSceneObjectWorldFromSceneObject(SceneObject *dest, SceneObject *src)
@@ -138,30 +90,30 @@ int compareCameraDists(SceneObject *a, SceneObject *b)
     return dist_a > dist_b ? 1 : dist_b > dist_a ? -1 : 0;
 }
 
-static SceneObject *_initSceneObject(SceneObject *sn, BufferData *data)
+static SceneObject *_initSceneObject(SceneObject *sn, const BufferData *data)
 {
     sn->renderMode = RENDER_COLOR;
     sn->name = NULL;
     sn->modelMatrix = newMat4();
     sn->worldMatrix = newMat4();
     sn->drawMatrix = newMat4();
-    sn->position = (Vec3){ 0.0f, 0.0f, 0.0f };
-    sn->scale = (Vec3){ 1.0f, 1.0f, 1.0f };
-    sn->color = (Vec3){ 0.5f, 0.5f, 0.5f };
-    sn->bufferData = data;
+    sn->position = vec3construct(0.0f, 0.0f, 0.0f);
+    sn->scale = vec3construct(1.0f, 1.0f, 1.0f);
+    sn->color = vec3construct(0.5f, 0.5f, 0.5f);
+    sn->bufferData = (BufferData *)data;
+    sn->permanent = no;
     return sn;
 }
 
-bool pointInSceneObjectRadius(SceneObject *so, Vec3 *pt)
+bool_t pointInSceneObjectRadius(SceneObject *so, Vec3 *pt)
 {
     if (pointInSphere(pt, &so->position, so->boundingRadius) && !so->permanent) {
-        // printf("%s collision at: %.2f %.2f %.2f\n", so->name, pt->x, pt->y, pt->z);
         so->renderMode |= RENDER_HIGHLIGHT;
-        so->highLight = true;
-        return true;
+        so->highLight = yes;
+        return yes;
     }
-    so->highLight = false;
+    so->highLight = no;
     so->renderMode &= ~RENDER_HIGHLIGHT;
-    return false;
+    return no;
 }
 
