@@ -30,23 +30,24 @@ struct SceneObject {
     RenderMode renderMode;
 
     // physics
-    Mat4 *modelMatrix;
-    Mat4 *worldMatrix;
-    Mat4 *drawMatrix;
+    mat4_t *modelMatrix;
+    mat4_t *worldMatrix;
+    mat4_t *drawMatrix;
 
-    Vec3 position;
-    Vec3 scale;
+    vec3_t position;
+    vec3_t scale;
+    // quat_t rot;
 
     float distFromCam;
     float boundingRadius;
-    Vec3 boundingBox[3];
+    vec3_t boundingBox[3];
     bool_t highLight;
     bool_t permanent;
 
 
     // appearance
     Material material;
-    Vec3 color;
+    vec3_t color;
 
     GLuint texture;
     GLenum activeTexture;
@@ -60,18 +61,37 @@ SceneObject *newSceneObject(const BufferData *data);
 SceneObject *newSceneObjectFromSceneObject(SceneObject *src);
 void destroySceneObject(SceneObject *sn);
 
-void calcBoundingBox(SceneObject *sn);
-void calcBoundingRadius(SceneObject *sn);
-
-void updateObjectDistFromCam(SceneObject *sm, Vec3 *camPos);
-
-void setSceneObjectWorldFromSceneObject(SceneObject *dest, SceneObject *src);
-void setSceneObjectWorldFromModel(SceneObject *so);
-void updateSceneObjectWorldMatrix(SceneObject *sn);
-void updateSceneObjectMatrices(SceneObject *sn);
-
-void addSceneObjectTexture(SceneObject *sn, size_t index);
+/*
+ * update
+ */
 int compareCameraDists(SceneObject *a, SceneObject *b);
-bool_t pointInSceneObjectRadius(SceneObject *so, Vec3 *pt);
+
+/* */
+void sceneobject_add_texture(SceneObject *sn, size_t index);
+
+/* */
+bool_t pointInSceneObjectRadius(SceneObject *so, vec3_t *pt);
+
+/*
+void updateSceneObjectWorldMatrix(SceneObject *sn)
+{
+    mulMat4(so->worldMatrix, so->modelMatrix);
+}
+void updateSceneObjectMatrices(SceneObject *sn)
+{
+    setMat4(sn->drawMatrix, sn->worldMatrix);
+    scaleMat4(sn->drawMatrix, &sn->scale);
+}
+static void setSceneObjectWorldFromSceneObject(SceneObject *dest,
+    SceneObject *src)
+{
+    setMat4(dest->worldMatrix, src->worldMatrix);
+}
+static void setSceneObjectWorldFromModel(SceneObject *so)
+{
+    setMat4(so->worldMatrix, so->modelMatrix);
+}
+*/
+
 
 #endif /* SCENENODE_H */

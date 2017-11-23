@@ -1,60 +1,97 @@
-CC      = gcc
-GDB     = gdb
-TARGET  = aa
-SRCDIR  = src
-INCDIR  = inc
-TSTDIR  = test
-OBJDIR  = objs
-DEPDIR  = deps
+cc      = gcc
+gdb     = gdb
+target  = aa
 
-vpath %.c src src/Math src/local
+#----------------------------------------------------------
 
-CPPFLAGS = -std=gnu11 -Wl,--build-id=sha1 -g -v
-DEPOPTS  = -MMD -MF $(DEPDIR)/$(*F).d
+root    = $(shell pwd)
+srcdir  = src
+dsdir   = $(srcdir)/data_structure
+geodir  = $(srcdir)/geometry
+mathdir = $(srcdir)/vecmath
 
-WARNINGS = -Wall -Werror -Wshadow -Wextra \
+incdir  = inc
+depdir  = deps
+objdir  = objs
+testdir = test
+
+#----------------------------------------------------------
+
+vpath %.c src/ $(mathdir) $(geodir) $(dsdir)
+.PHONY: clean
+
+depopts   = -MMD -MF $(depdir)/$(*F).d
+cppflags := -std=gnu99 -Wl,--build-id=sha1
+
+warnings = -Wall -Werror -Wshadow -Wextra \
            -Wundef -Wpointer-arith \
            -Wcast-align -Wwrite-strings \
            -Wconversion -Wunreachable-code
 
-LIBS = -lGL -lGLEW -lglfw \
+inc  = -I $(incdir) \
+       -I $(incdir)/vecmath \
+       -I $(incdir)/data_structure
+
+libs = -lGL -lGLEW -lglfw \
        -lSOIL -lglut -lGLU \
        -lm
 
+src_cfiles  := main.c loop.c             backend.c \
+               BufferData.c               camera.c \
+               Render.c RenderList.c       Scene.c \
+               SceneObject.c Shader.c shaderdata.c \
+               texture.c utils.c           World.c
+ds_cfiles   := array.c
+geo_cfiles  := meshdata.c     meshdata_wavefront.c \
+               meshdata_quad.c  meshdata_pyramid.c \
+               meshdata_sphere.c   meshdata_cube.c
+math_cfiles := Frustum.c Mat4.c Quat.c Vec3.c \
+               vecrot.c
 
-INC  = -I ./inc -I ./inc/Math
+srcs := src_cfiles sfiles
+objs := $(addprefix $(objdir)/,$(src_cfiles:.c=.c.o)) \
+        $(addprefix $(objdir)/,$(math_cfiles:.c=.c.o)) \
+        $(addprefix $(objdir)/,$(geo_cfiles:.c=.c.o)) \
+        $(addprefix $(objdir)/,$(ds_cfiles:.c=.c.o))
+deps := $(addprefix $(depdir)/,$(srcs:.c=.d)) \
+        $(addprefix $(depdir)/,$(srcs:.s=.d))
 
-SRCS = main.c loop.c backend.c Shader.c \
-       Render.c BufferData.c World.c \
-       Camera.c Frustum.c Vec3.c Mat4.c \
-       SceneObject.c RenderList.c Scene.c \
-       shaderdata.c utils.c meshdata.c \
-       texture.c Array.c
 
-OBJS = $(addprefix $(OBJDIR)/,$(SRCS:.c=.o))
-DEPS = $(addprefix $(DEPDIR)/,$(SRCS:.c=.d))
+#----------------------------------------------------------
 
-all: proj
+-include $(deps)
 
--include $(DEPS)
+ifdef DEBUG
+    cppflags += -g -ggdb
+endif
 
-proj: $(TARGET)
+
+#----------------------------------------------------------
+#                       Recipes
+#----------------------------------------------------------
+
+all: $(target)
 
 dirs:
-	mkdir -p $(OBJDIR) $(DEPDIR)
-	touch $(OBJDIR) $(DEPDIR)
+	mkdir -p $(objdir) $(depdir)
+	touch $(objdir) $(depdir)
+	@echo $(objs)
 
-$(TARGET):  $(OBJS)
-	$(CC) $(CPPFLAGS) -o $@ $^ $(LIBS)
-	@echo compilation successful af
+showobjs:
+	@echo $(objs)
+showsrcs:
+	@echo $(srcs)
 
-$(OBJDIR)/%.o: %.c dirs
-	$(CC) $(CPPFLAGS) $(WARNINGS) -c $< -o $@ $(DEPOPTS) $(INC)
+$(target): $(objs)
+	$(cc) $(cppflags) $^ -o $@ $(depopts) $(libs)
+
+$(objdir)/%.c.o: %.c dirs
+	@echo Building object files from C sources.
+	$(cc) $(cppflags) $(warnings) -c $< -o $@ $(depopts) $(inc)
 
 Mat4.s: Mat4.c
-	$(CC) -O $(CPPFLAGS) $(WARNINGS) -S -fverbose-asm -masm=intel -o $@ $(INC) $<
+	$(cc) -O3 $(cppflags) $(warnings) -S -masm=intel -o $@ $(inc) $<
 
-.PHONY: clean
 clean:
-	rm -rf $(OBJDIR) $(DEPDIR)
-	$(RM) $(TARGET) *.o
+	rm -rf $(objdir) $(depdir)
+	rm -f $(target) *.o *.log

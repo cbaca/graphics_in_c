@@ -1,18 +1,37 @@
 #include "RenderList.h"
-#include "Frustum.h"
-#include "Camera.h"
+#include "vecmath.h"
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
 
 static void _updateObjNodeCamDist(ObjNode *sn, Vec3 *camPos);
 static void _freeNodes(ObjNode *on);
-static bool_t _checkObjNodePointInRadius(ObjNode *on, Camera *c);
-// static void _printObjNodeCamDist(ObjNode *sn);
-// static ObjNode *_sortObjNodeByCamDist(ObjNode *n);
-// static bool_t _removeNode(ObjNode *cur, ObjNode *target);
+static bool_t _checkObjNodePointInRadius(ObjNode *on, struct camera *c);
 
-size_t countItems(RenderList *rl)
+RenderList *renderlist_create(RenderMode rm)
+{
+    RenderList *rl = malloc(sizeof(RenderList));
+    rl->root = NULL;
+    rl->num_nodes = 0;
+    rl->renderMode = rm;
+    return rl;
+}
+
+static void _freeNodes(ObjNode *on)
+{
+    if (!on) return;
+    _freeNodes(on->next);
+    destroySceneObject(on->object);
+    free(on);
+}
+
+void renderlist_destroy(RenderList *rl)
+{
+    _freeNodes(rl->root);
+    free(rl);
+}
+
+size_t renderlist_count_items(RenderList *rl)
 {
     ObjNode *on = rl->root;
     size_t cnt = 0;
@@ -23,22 +42,7 @@ size_t countItems(RenderList *rl)
     return cnt;
 }
 
-RenderList *newRenderList(RenderMode rm)
-{
-    RenderList *rl = malloc(sizeof(RenderList));
-    rl->root = NULL;
-    rl->num_nodes = 0;
-    rl->renderMode = rm;
-    return rl;
-}
-
-void destroyRenderList(RenderList *rl)
-{
-    _freeNodes(rl->root);
-    free(rl);
-}
-
-void pushRenderList(RenderList *rl, SceneObject *so)
+void renderlist_push(RenderList *rl, SceneObject *so)
 {
     ObjNode *on = malloc(sizeof(ObjNode));
     on->object = so;
@@ -50,7 +54,7 @@ void pushRenderList(RenderList *rl, SceneObject *so)
     rl->root->prev = NULL;
 }
 
-SceneObject *popRenderList(RenderList *rl)
+SceneObject *renderlist_pop(RenderList *rl)
 {
     if (!rl->root) return NULL;
 
@@ -62,7 +66,7 @@ SceneObject *popRenderList(RenderList *rl)
     return ret;
 }
 
-void pushObjNode(RenderList *rl, ObjNode *on)
+void renderlist_push_node(RenderList *rl, ObjNode *on)
 {
     if (!on) return;
     rl->num_nodes++;
@@ -73,7 +77,7 @@ void pushObjNode(RenderList *rl, ObjNode *on)
     rl->root->prev = NULL;
 }
 
-ObjNode *popObjNode(RenderList *rl)
+ObjNode *renderlist_pop_node(RenderList *rl)
 {
     if (!rl->root) return NULL;
 
@@ -86,7 +90,8 @@ ObjNode *popObjNode(RenderList *rl)
     return ret;
 }
 
-void compareAndUpdateList(RenderList *dest, RenderList *src)
+/* compare and swap if prereqs met */
+void renderlist_compare_and_update(RenderList *dest, RenderList *src)
 {
     ObjNode *cur = src->root;
     while (cur) {
@@ -117,6 +122,18 @@ void compareAndUpdateList(RenderList *dest, RenderList *src)
     }
 }
 
+
+
+
+
+bool_t renderlist_is_empty(RenderList *rl)
+{
+    return rl->root == nil;
+}
+
+
+
+
 void _printList(ObjNode *on)
 {
     if (!on) return;
@@ -124,117 +141,74 @@ void _printList(ObjNode *on)
     _printList(on->next);
 }
 
-void printList(RenderList *rl)
+void renderlist_print(RenderList *rl)
 {
     _printList(rl->root);
 }
 
-void updateCamDists(RenderList *rl, Vec3 *camPos)
+
+
+
+/* SceneObject's update cam dist function is called recursively
+   for each SceneObject in the list */
+static void _updateObjNodeCamDist(ObjNode *sn, vec3_t *camPos)
+{
+    if (!sn) return;
+    sn->object->distFromCam = vec3dot(&sn->object->position, camPos);
+    _updateObjNodeCamDist(sn->next, camPos);
+}
+
+void renderlist_update_cam_dists(RenderList *rl, Vec3 *camPos)
 {
     _updateObjNodeCamDist(rl->root, camPos);
 }
 
+
+
+
+/* SceneObject's "calcBoundingRadius" called recursively */
 void _calcBoundingRadii(ObjNode *on)
 {
     if (!on) return;
     if (on->object->permanent)
         on->object->boundingRadius = 0.0f;
     else
-        calcBoundingRadius(on->object);
+        on->object->boundingRadius = vec3length(&on->object->scale);
     _calcBoundingRadii(on->next);
 }
 
-void calcBoundingRadii(RenderList *rl)
+void renderlist_calc_bounding_radii(RenderList *rl)
 {
     _calcBoundingRadii(rl->root);
 }
 
-bool_t checkPointInRadiusCollisions(RenderList *rl, Camera *c)
+
+
+
+/* Detection for camera target collision , recursive */
+bool_t _checkObjNodePointInRadius(ObjNode *on, struct camera *c)
 {
-    return _checkObjNodePointInRadius(rl->root, c);
-}
+    if (!on)
+        return no;
+    vec3_t pt = camera_target_from_pos(c, &on->object->position);
 
-size_t objectListLen(RenderList *rl)
-{
-    return rl->num_nodes;
-}
-
-bool_t isEmpty(RenderList *rl)
-{
-    return rl->root == NULL;
-}
-
-bool_t _checkFrustumCollision(ObjNode *on, Frustum *fr)
-{
-    if (!on) return no;
-    if (frustumSphereIntersection(fr, &on->object->position, on->object->boundingRadius)) {
-        on->object->renderMode |= RENDER_INVISIBLE;
-        return yes;
-    }
-    on->object->renderMode &= ~RENDER_INVISIBLE;
-    // if (on->object->name)
-        // printf("%s @ %.2f %.2f %.2f is invisible\n", on->object->name, on->object->position.x, on->object->position.y,
-        //     on->object->position.z);
-    return _checkFrustumCollision(on->next, fr);
-}
-
-bool_t checkFrustumCollision(RenderList *rl, Frustum *fr)
-{
-    return _checkFrustumCollision(rl->root, fr);
-}
-
-// void sortByCamDist(RenderList *rl)
-// {
-//     if (!rl->root || !rl->root->next) return;
-//     rl->root = _sortObjNodeByCamDist(rl->root);
-// }
-
-
-// void removeObjNode(RenderList *rl, ObjNode *sn)
-// {
-//     _removeNode(rl->root, sn);
-// }
-
-/**
- * Private function definitions
- */
-static void _updateObjNodeCamDist(ObjNode *sn, Vec3 *camPos)
-{
-    if (!sn) return;
-    updateObjectDistFromCam(sn->object, camPos);
-    _updateObjNodeCamDist(sn->next, camPos);
-}
-
-void _freeNodes(ObjNode *on)
-{
-    if (!on) return;
-    _freeNodes(on->next);
-    destroySceneObject(on->object);
-    free(on);
-}
-
-bool_t _checkObjNodePointInRadius(ObjNode *on, Camera *c)
-{
-    if (!on) return no;
-    Vec3 pt = get_camera_target_as(c, &on->object->position);
     if (pointInSceneObjectRadius(on->object, &pt))
         return yes;
     return _checkObjNodePointInRadius(on->next, c);
 }
 
-// static void _printObjNodeCamDist(ObjNode *sn)
-// {
-//     if (!sn) return;
-//     if (sn->object->name)
-//         printf("%s ", sn->object->name);
-//     printf("%f\n", sn->object->distFromCam);
-//     _printObjNodeCamDist(sn->next);
-// }
+bool_t renderlist_has_point_radius_collisions(RenderList *rl, struct camera *c)
+{
+    return _checkObjNodePointInRadius(rl->root, c);
+}
 
-// void printCamDists(RenderList *rl)
-// {
-//     _printObjNodeCamDist(rl->root);
-// }
+
+
+
+
+
+
+
 
 // ObjNode *_sortObjNodeByCamDist(ObjNode *n)
 // {
@@ -251,7 +225,27 @@ bool_t _checkObjNodePointInRadius(ObjNode *on, Camera *c)
 //     n = root;
 //     return root;
 // }
-
+// void sortByCamDist(RenderList *rl)
+// {
+//     if (!rl->root || !rl->root->next) return;
+//     rl->root = _sortObjNodeByCamDist(rl->root);
+// }
+// void removeObjNode(RenderList *rl, ObjNode *sn)
+// {
+//     _removeNode(rl->root, sn);
+// }
+// static void _printObjNodeCamDist(ObjNode *sn)
+// {
+//     if (!sn) return;
+//     if (sn->object->name)
+//         printf("%s ", sn->object->name);
+//     printf("%f\n", sn->object->distFromCam);
+//     _printObjNodeCamDist(sn->next);
+// }
+// void printCamDists(RenderList *rl)
+// {
+//     _printObjNodeCamDist(rl->root);
+// }
 // bool_t _removeNode(ObjNode *cur, ObjNode *target)
 // {
 //     assert(target->next != target);

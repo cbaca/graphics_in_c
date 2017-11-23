@@ -186,7 +186,8 @@ BufferData *bufferDataInitPrimitive(BufferData *b, BufferDataPrim_t bdp)
 BufferData *bufferDataInitFromFile(BufferData *b, const char *path)
 {
     meshdata_t meshdata;
-    if (!genMeshdataFromFile(path, &meshdata)) {
+    // if (!genMeshdataFromFile(path, &meshdata)) {
+    if (!meshdata_from_wavefront(path, &meshdata)) {
         fprintf(stderr, "Failed to generate meshdata from file: %s\n", path);
         return NULL;
     }

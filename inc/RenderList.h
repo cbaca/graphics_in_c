@@ -2,8 +2,8 @@
 #define SCENELIST_H
 #include <stdlib.h>
 #include "SceneObject.h"
+#include "camera.h"
 
-typedef struct camera_t Camera;
 typedef struct ObjNode ObjNode;
 typedef struct RenderList RenderList;
 typedef struct Frustum Frustum;
@@ -20,29 +20,74 @@ struct RenderList {
     RenderMode renderMode;
 };
 
-size_t countItems(RenderList *rl);
-RenderList *newRenderList(RenderMode rm);
-void destroyRenderList(RenderList *rl);
+/**
+ * renderlist_create
+ */
+RenderList *renderlist_create(RenderMode rm) __attribute__ ((malloc));
 
-void pushRenderList(RenderList *sceneList, SceneObject *so);
-SceneObject *popRenderList(RenderList *sceneList);
+/**
+ * renderlist_destroy
+ */
+void renderlist_destroy(RenderList *rl);
 
-void pushObjNode(RenderList *rl, ObjNode *on);
-ObjNode *popObjNode(RenderList *rl);
+/**
+ * renderlist_count_items
+ */
+size_t renderlist_count_items(RenderList *rl);
 
-void compareAndUpdateList(RenderList *dest, RenderList *src);
+/**
+ * renderlist_push
+ */
+void renderlist_push(RenderList *sceneList, SceneObject *so);
 
-void printList(RenderList *rl);
+/**
+ * renderlist_pop
+ */
+SceneObject *renderlist_pop(RenderList *sceneList);
 
+/**
+ * renderlist_push_node
+ */
+void renderlist_push_node(RenderList *rl, ObjNode *on);
 
-bool_t checkFrustumCollision(RenderList *rl, Frustum *fr);
-bool_t checkPointInRadiusCollisions(RenderList *rl, Camera *c);
-void updateCamDists(RenderList *rl, Vec3 *camPos);
-void calcBoundingRadii(RenderList *rl);
-size_t objectListLen(RenderList *rl);
-bool_t isEmpty(RenderList *rl);
-// void printCamDists(RenderList *rl);
-// void sortByCamDist(RenderList *rl);
-// void removeObjNode(RenderList *rl, ObjNode *sn);
+/**
+ * renderlist_pop_node
+ */
+ObjNode *renderlist_pop_node(RenderList *rl);
+
+/**
+ * renderlist_compare_and_update
+ */
+void renderlist_compare_and_update(RenderList *dest, RenderList *src);
+
+/**
+ * renderlist_print
+ */
+void renderlist_print(RenderList *rl);
+
+/**
+ * renderlist_has_frustum_collision
+ */
+// bool_t renderlist_has_frustum_collision(RenderList *rl, Frustum *fr);
+
+/**
+ * renderlist_has_point_radius_collisions
+ */
+bool_t renderlist_has_point_radius_collisions(RenderList *rl, struct camera *c);
+
+/**
+ * renderlist_update_cam_dists
+ */
+void renderlist_update_cam_dists(RenderList *rl, Vec3 *camPos);
+
+/**
+ * renderlist_calc_bounding_radii
+ */
+void renderlist_calc_bounding_radii(RenderList *rl);
+
+/**
+ * renderlist_is_empty
+ */
+bool_t renderlist_is_empty(RenderList *rl);
 
 #endif // SCENELIST_H

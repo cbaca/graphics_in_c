@@ -6,19 +6,31 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-// typedef union Loc_t { float v[2]; struct { float x, y; } p; } Loc;
-// typedef union Win_t { float s[2]; Window_t w; } Win;
-typedef union loc_t { float v[2]; Cursor p; } Loc;
-typedef union win_t { float s[2]; WindowSize w; } Win;
+typedef union loc {
+    float v[2];
+    Cursor p;
+} loc_t;
+
+typedef union win {
+    float s[2];
+    WindowSize w; }
+win_t;
 
 struct camera_t {
-    Loc mouse;
-    Win window;
+    Vec3  position,
+          front, forward,
+          up,      world,
+          right,  target;
 
-    float dist, yaw, pitch, velocity, sensitivity;
-    float fov, far, near;
+    float yaw, pitch, // roll,
+          velocity, sensitivity,
+          dist,
+          far, near,
+          fov;
 
-    Vec3 position, front, forward, up, world, right, target;
+    loc_t mouse;
+    win_t window;
+
 };
 
 Camera *_cameraInit(Camera *c, Vec3 *pos, float x, float y)
@@ -34,8 +46,6 @@ Camera *_cameraInit(Camera *c, Vec3 *pos, float x, float y)
 
     c->mouse.p.x = x;
     c->mouse.p.y = y;
-    // c->lastX = x;
-    // c->lastY = y;
 
     vec3set(&c->position, pos);
     c->front = vec3construct(0.0f, 0.0f, 0.0f);
@@ -69,19 +79,6 @@ void _cameraMoveBackward(Camera *c)
     c->position.z -= c->forward.z;
 }
 
-void _cameraMoveLeft(Camera *c) { vec3sub(&c->position, &c->right); }
-void _cameraMoveRight(Camera *c) { vec3add(&c->position, &c->right); }
-void _cameraMoveDown(Camera *c) { c->position.y -= c->velocity; }
-void _cameraMoveUp(Camera *c) { c->position.y += c->velocity; }
-
-void _camD_callback(void *c) { _cameraMoveDown((Camera *)c); }
-void _camU_callback(void *c) { _cameraMoveUp((Camera *)c); }
-void _camL_callback(void *c) { _cameraMoveLeft((Camera *)c); }
-void _camR_callback(void *c) { _cameraMoveRight((Camera *)c); }
-void _camF_callback(void *c) { _cameraMoveForward((Camera *)c); }
-void _camB_callback(void *c) { _cameraMoveBackward((Camera *)c); }
-// z = exp(-(x^2+y^2)) * cos(0.25*x) * sin(y) * cos(2*(x^2+y^2)).
-
 Camera *new_camera(Vec3 *pos)
 {
     WindowSize w;
@@ -111,7 +108,10 @@ Camera *update_camera(Camera *c)
     const float pitch = TO_RAD(c->pitch);
     const float cospitch = cosf(pitch);
 
-    c->front = vec3construct(cosf(yaw) * cospitch, sinf(pitch), sinf(yaw) * cospitch);
+    // newx = cosf(yaw) * cospitch
+    // newy = sinf(pitch)
+    // newz = sinf(yaw) * cospitch
+    c->front = vec3_construct(cosf(yaw) * cospitch, sinf(pitch), sinf(yaw) * cospitch);
 
     {
         c->forward = vec3copy(&c->front);
@@ -207,4 +207,17 @@ void set_camera_dist(Camera *c, float d)
 {
     c->dist = d;
 }
+
+void _cameraMoveLeft(Camera *c) { vec3sub(&c->position, &c->right); }
+void _cameraMoveRight(Camera *c) { vec3add(&c->position, &c->right); }
+void _cameraMoveDown(Camera *c) { c->position.y -= c->velocity; }
+void _cameraMoveUp(Camera *c) { c->position.y += c->velocity; }
+
+void _camD_callback(void *c) { _cameraMoveDown((Camera *)c); }
+void _camU_callback(void *c) { _cameraMoveUp((Camera *)c); }
+void _camL_callback(void *c) { _cameraMoveLeft((Camera *)c); }
+void _camR_callback(void *c) { _cameraMoveRight((Camera *)c); }
+void _camF_callback(void *c) { _cameraMoveForward((Camera *)c); }
+void _camB_callback(void *c) { _cameraMoveBackward((Camera *)c); }
+// z = exp(-(x^2+y^2)) * cos(0.25*x) * sin(y) * cos(2*(x^2+y^2)).
 

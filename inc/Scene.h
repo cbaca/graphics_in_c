@@ -1,24 +1,18 @@
 #ifndef SCENEOBJ_H
 #define SCENEOBJ_H
-// #include "RenderList.h"
-// #include "Camera.h"
-// #include "Frustum.h"
-// #include "Shader.h"
 #include "types.h"
+#include "camera.h"
 #include "RenderList.h"
 
-typedef struct camera_t Camera;
-typedef struct Frustum Frustum;
-typedef struct Mat4 Mat4;
-
 typedef struct Scene {
-    // gl array buffers
-    BufferData sphereData;
-    BufferData cubeData;
-    BufferData texCubeData;
-    BufferData pyramidData;
+
+    /*  data needed for context switching preloaded rendering data */
+    BufferData      cubeData;
+    BufferData      quadData;
+    BufferData    sphereData;
+    BufferData   texCubeData;
+    BufferData   pyramidData;
     BufferData landscapeData;
-    BufferData quadData;
 
 
     // model/mesh data structures
@@ -29,30 +23,21 @@ typedef struct Scene {
     RenderList *noRenderList;
 
     // camera controls and calculations
-    Camera *camera;
+    struct camera camera;
     SceneObject *camTarget;
-    Frustum *frustum;
+    SceneObject *obj;
 
-    Mat4 *viewMatrix;
-    Mat4 *projectionMatrix;
+    mat4_t *viewMatrix;
+    mat4_t *projectionMatrix;
 
 } Scene;
 
-bool_t initScene(Scene *s);
+bool_t  scene_init(Scene *s);
 
-void updateVisibility(Scene *s);
+void    scene_finalize(Scene *s);
 
-void finalizeScene(Scene *s);
+void    scene_update(Scene *s, bool_t needs_update);
 
-void updateScene(Scene *s, bool_t needs_update);
-
-int sceneHasHighlightObjects(Scene *s);
-
-// void drawSceneColor(Scene *s, GLint uModel, GLint uColor);
-// void drawSceneColor(Scene *s, MaterialShader *sh, Vec3 *campos);
-// void drawSceneHighlightColor(Scene *s, MaterialShader *sh, Vec3 *campos);
-// void drawSceneTexture(Scene *s, GLint uModel, GLint uTexture);
-// void drawSceneHighlightTexture(Scene *s, GLint uModel, GLint uTexture);
-// void drawSceneHighlight(Scene *s, GLint uModel);
+int     scene_has_highlight_objects(Scene *s);
 
 #endif // SCENEOBJ_H

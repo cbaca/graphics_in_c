@@ -305,7 +305,7 @@ void window_tick(void)
 int backend_exit_success(void)
 {
     finalizeTextures();
-    finalizeMeshData();
+    meshdata_arrays_finalize();
     glfwDestroyWindow(State.glfwWindow);
     glfwTerminate();
     return EXIT_SUCCESS;
@@ -370,9 +370,10 @@ void init_backend(void)
     // glStencilFunc(GL_NOTEQUAL, 1, 0xff); glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     initTextures(TEXTURES_ROOT_DIR);
-    initMeshData(MESHDATA_ROOT_DIR);
+    meshdata_arrays_init(MESHDATA_ROOT_DIR);
     // initShaderData(SHADERS_ROOT_DIR);
-    printObjFiles();
+    // printObjFiles();
+    wavefront_paths_print();
     printTexFiles();
     // printShaderFiles();
 

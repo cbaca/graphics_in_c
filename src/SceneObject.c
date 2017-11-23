@@ -1,4 +1,3 @@
-
 #include "SceneObject.h"
 #include "texture.h"
 #include "vecmath.h"
@@ -41,40 +40,7 @@ void destroySceneObject(SceneObject *sn)
         free(sn->name);
 }
 
-void calcBoundingRadius(SceneObject *sn)
-{
-    if (!sn) return;
-    sn->boundingRadius = vec3length(&sn->scale);
-}
-
-void updateObjectDistFromCam(SceneObject *sn, Vec3 *camPos)
-{
-    Vec3 p = vec3copy(&sn->position);
-    sn->distFromCam = vec3dot(&p, camPos);
-}
-
-void setSceneObjectWorldFromSceneObject(SceneObject *dest, SceneObject *src)
-{
-    setMat4(dest->worldMatrix, src->worldMatrix);
-}
-
-void setSceneObjectWorldFromModel(SceneObject *so)
-{
-    setMat4(so->worldMatrix, so->modelMatrix);
-}
-
-void updateSceneObjectWorldMatrix(SceneObject *so)
-{
-    mulMat4(so->worldMatrix, so->modelMatrix);
-}
-
-void updateSceneObjectMatrices(SceneObject *sn)
-{
-    setMat4(sn->drawMatrix, sn->worldMatrix);
-    scaleMat4(sn->drawMatrix, &sn->scale);
-}
-
-void addSceneObjectTexture(SceneObject *sn, size_t index)
+void sceneobject_add_texture(SceneObject *sn, size_t index)
 {
     Texture *t = getTexture(index);
     sn->texture = t->tex;
@@ -105,7 +71,7 @@ static SceneObject *_initSceneObject(SceneObject *sn, const BufferData *data)
     return sn;
 }
 
-bool_t pointInSceneObjectRadius(SceneObject *so, Vec3 *pt)
+bool_t pointInSceneObjectRadius(SceneObject *so, vec3_t *pt)
 {
     if (pointInSphere(pt, &so->position, so->boundingRadius) && !so->permanent) {
         so->renderMode |= RENDER_HIGHLIGHT;

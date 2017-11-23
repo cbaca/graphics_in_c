@@ -1,6 +1,6 @@
 #include "Render.h"
 #include "backend.h"
-#include "Camera.h"
+#include "camera.h"
 #include "RenderList.h"
 #include "types.h"
 #include "Mat4.h"
@@ -105,7 +105,7 @@ void drawHighlightSceneObject(SceneObject *so, GLint uModel);
 void destroy_renderer(Renderer *r)
 {
     finalizeWorld(&r->world);
-    finalizeScene(&r->scene);
+    scene_finalize(&r->scene);
     free(r);
 }
 
@@ -144,7 +144,7 @@ struct render_t *new_renderer(void)
     struct render_t *r = malloc(sizeof(struct render_t));
 
     initWorld(&r->world);
-    initScene(&r->scene);
+    scene_init(&r->scene);
 
     // Shaders
     {
@@ -173,12 +173,12 @@ void render_idle(Renderer *r)
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     const ToyShader *sh = &r->mShader;
     USE_SHADER(sh);
-    float *cur = get_mouse_from_camera(r->scene.camera);
+    float *cur = camera_get_mouse_pos(&r->scene.camera);
     float mou[2];
     mou[0] = -cur[0];
     mou[1] = cur[1];
     glUniform1f(sh->uTime, r->world.lastTime);
-    glUniform2fv(sh->uResolution, 1, get_resolution_from_camera(r->scene.camera));
+    glUniform2fv(sh->uResolution, 1, camera_get_resolution(&r->scene.camera));
     glUniform2fv(sh->uMouse, 1, mou);
 
     glBindVertexArray(r->vao);
@@ -209,7 +209,7 @@ void render(Renderer *r)
     _render_list(r, r->scene.colorList, &r->cShader);
     _render_list(r, r->scene.textureList, &r->tShader);
 
-    if (sceneHasHighlightObjects(&r->scene))
+    if (scene_has_highlight_objects(&r->scene))
         _renderHighlight(r);
 }
 
@@ -218,7 +218,7 @@ void update_renderer(Renderer *r, const WindowSize *ws, const float seconds, con
     r->window_size = *ws;
     r->needs_update = needs_update;
     worldUpdate(&r->world, seconds);
-    updateScene(&r->scene, needs_update);
+    scene_update(&r->scene, needs_update);
 }
 
 /**
@@ -226,11 +226,11 @@ void update_renderer(Renderer *r, const WindowSize *ws, const float seconds, con
  */
 void _render_list(Renderer *r, RenderList *rl, LightingShader *sh)
 {
-    const Scene *s = &r->scene;
+    Scene *s = &r->scene;
     World_t *w = &r->world;
 
     glUseProgram(sh->program);
-    glUniform3fv(sh->uCamPos, 1, (float *)get_camera_position(s->camera));
+    glUniform3fv(sh->uCamPos, 1, (float *)camera_get_pos(&s->camera));
     setLightUniforms(&sh->uDirLight, &w->dirLight);
     setSpotLightUniforms(&sh->uSpotLight, &w->spotLight);
     setPointLightUniforms(&sh->uPointLight, &w->pointLight);
